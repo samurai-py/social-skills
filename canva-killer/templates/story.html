@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8">
+<link href="{{googleFonts}}" rel="stylesheet">
+<script type="application/json" data-ck-model>{"dims":[1080,1920],"blocks":[{"id":1,"type":"rect","x":40,"y":60,"w":1000,"h":72,"color":"surface","radius":16,"rot":0},{"id":2,"type":"logo","x":70,"y":80,"size":38,"color":"text","rot":0},{"id":3,"type":"texto","x":852,"y":90,"token":"data","text":"","font":"mono","size":26,"color":"muted","weight":400,"ls":0,"rot":0},{"id":4,"type":"window","x":40,"y":160,"w":1000,"h":1680,"title":"~/4gentes — story.md","bar":56,"radius":16,"src":"","fit":"cover","effect":"none","rot":0},{"id":5,"type":"kicker","x":92,"y":360,"token":"kicker","text":"KICKER","font":"mono","size":30,"color":"accent","ls":4,"upper":true,"weight":400,"rot":0},{"id":6,"type":"bar","x":92,"y":414,"bstyle":"underline","w":130,"h":9,"color":"accent","radius":5,"rot":0},{"id":7,"type":"texto","x":92,"y":462,"token":"titulo","text":"","font":"disp","size":108,"weight":700,"color":"text","ls":-3,"rot":0,"w":880},{"id":8,"type":"texto","x":92,"y":1720,"token":"cta","text":"","font":"mono","size":32,"color":"accent","weight":600,"ls":0,"rot":0},{"id":9,"type":"texto","x":92,"y":1770,"token":"handle","text":"","font":"mono","size":28,"color":"muted","weight":400,"ls":0,"rot":0}],"meta":{"size":"1080x1920","pattern":"grid"}}</script>
+<style>
+  {{baseStyles}}
+  #canvas{width:1080px;height:1920px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};}
+</style></head>
+<body>
+  <div id="canvas">
+    <div class="bg-photo" style="{{bgstyle}}"></div>
+    <div class="bg-overlay"></div>
+    <div class="bg-pattern {{patternClass}}"></div>
+    <div style="position:absolute;left:40px;top:60px;width:1000px;height:72px;background:{{surface}};border-radius:16px;"></div>
+    <span style="position:absolute;left:70px;top:80px;height:38px;color:{{text}};display:flex">{{logoSvg}}</span>
+    <div style="position:absolute;left:852px;top:90px;font-family:{{mono}};font-size:26px;font-weight:400;color:{{muted}};letter-spacing:0px;line-height:1.05;">{{data}}</div>
+    <div style="position:absolute;left:40px;top:160px;width:1000px;height:1680px;border:1px solid {{surface}};border-radius:16px;overflow:hidden;display:flex;flex-direction:column;background:{{bg}}">
+      <div style="height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;background:{{surface}};font-family:{{mono}};font-size:21px;color:{{muted}}">
+        <span style="width:16px;height:16px;border-radius:50%;background:{{accent}}"></span>
+        <span style="flex:1">~/4gentes — story.md</span><span style="letter-spacing:3px">_ □ ✕</span>
+      </div><div style="flex:1"></div>
+    </div>
+    <div style="position:absolute;left:92px;top:360px;font-family:{{mono}};font-size:30px;font-weight:400;color:{{accent}};letter-spacing:4px;line-height:1.05;text-transform:uppercase;">{{kicker}}</div>
+    <div style="position:absolute;left:92px;top:414px;width:130px;height:9px;background:{{accent}};border-radius:5px;"></div>
+    <div style="position:absolute;left:92px;top:462px;width:880px;font-family:{{display}};font-size:108px;font-weight:700;color:{{text}};letter-spacing:-3px;line-height:1.05;">{{titulo}}</div>
+    <div style="position:absolute;left:92px;top:1720px;font-family:{{mono}};font-size:32px;font-weight:600;color:{{accent}};letter-spacing:0px;line-height:1.05;">{{cta}}</div>
+    <div style="position:absolute;left:92px;top:1770px;font-family:{{mono}};font-size:28px;font-weight:400;color:{{muted}};letter-spacing:0px;line-height:1.05;">{{handle}}</div>
+  </div>
+</body></html>

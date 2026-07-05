@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  TEMPLATE SKELETON — copie pra templates/<id>.html e edite.
+  Regras:
+  - {{baseStyles}} injeta reset + camadas de fundo + padrões + helpers (.hl, .ic). Sempre inclua.
+  - Deve existir UM elemento #canvas com o tamanho-alvo (define o que é exportado) e com
+    position:relative + isolation:isolate + overflow:hidden (pras camadas de fundo funcionarem).
+    Tamanhos: 1080x1080 (post), 1080x1920 (story), 1080x1350 (carrossel), 1200x630 (capa/OG).
+  - As 3 divs de fundo (ordem importa): .bg-photo -> .bg-overlay -> .bg-pattern {{patternClass}}.
+  - Tokens da marca: {{bg}} {{surface}} {{text}} {{muted}} {{accent}} {{display}} {{mono}}
+                     {{googleFonts}} {{logoText}} {{handle}} {{name}}
+    Tokens de conteúdo (do `data`): {{titulo}} {{kicker}} {{cta}} {{topright}}... (crie os que quiser)
+  - Texto aceita HTML inline: use <span class="hl">palavra</span> (helper do base.css) pra destaque.
+  - Ícones: {{icon:shield}} (Lucide) ou {{icon:custom/nome}} (assets/custom). Dê tamanho ao container.
+  - Imagem de fundo: data.bgimage (local/URL). Padrão de fundo: data.pattern (grid|dots|scanlines|mesh|hatch|noise|none).
+  - Arquivos começando com "_" são ignorados por list_templates.
+-->
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<link href="{{googleFonts}}" rel="stylesheet">
+<style>
+  {{baseStyles}}
+
+  #canvas {
+    width: 1080px; height: 1080px;    /* <- ajuste pro tamanho do seu layout */
+    position: relative; isolation: isolate; overflow: hidden;
+    background: {{bg}}; color: {{text}}; font-family: {{display}};
+    padding: 96px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .kicker { position: relative; z-index: 1; font-family: {{mono}}; color: {{accent}};
+    text-transform: uppercase; letter-spacing: 4px; }
+  .title  { position: relative; z-index: 1; font-weight: 700; font-size: 100px; line-height: 1.02; }
+  .foot   { position: relative; z-index: 1; font-family: {{mono}}; color: {{muted}};
+    display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <div id="canvas">
+    <div class="bg-photo" style="{{bgstyle}}"></div>
+    <div class="bg-overlay"></div>
+    <div class="bg-pattern {{patternClass}}"></div>
+    <div class="kicker">{{kicker}}</div>
+    <div class="title">{{titulo}}</div>
+    <div class="foot"><span>{{cta}}</span><span>{{handle}}</span></div>
+  </div>
+</body>
+</html>

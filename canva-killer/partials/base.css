@@ -1,0 +1,61 @@
+/* canva-killer — base.css (injetado nos templates via {{baseStyles}}).
+   Reset + camadas de fundo (imagem, overlay, padrões procedurais) + helpers.
+   É preenchido com os tokens da marca antes de injetar, então usa {{bg}}, {{surface}},
+   {{accent}}, {{noiseUri}} normalmente. Fica num <style>, não num atributo — pode usar aspas duplas. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: #000; }
+
+/* Camadas de fundo. Ficam DENTRO do #canvas, que deve ter position:relative + isolation:isolate.
+   Ordem (de trás pra frente): foto (-3) -> overlay (-2) -> padrão (-1) -> conteúdo (>=0). */
+.bg-photo   { position: absolute; inset: 0; z-index: -3; background-size: cover; background-position: center; }
+.bg-overlay { position: absolute; inset: 0; z-index: -2;
+  background: linear-gradient(180deg, {{bg}}d9 0%, {{bg}}59 45%, {{bg}}f2 100%); }
+.bg-pattern { position: absolute; inset: 0; z-index: -1; }
+
+/* ---- padrões procedurais (escolha via data.pattern -> classe pat-<nome>) ---- */
+.pat-none {}
+
+.pat-grid {
+  background-image:
+    linear-gradient({{surface}} 1px, transparent 1px),
+    linear-gradient(90deg, {{surface}} 1px, transparent 1px);
+  background-size: 54px 54px; opacity: .55;
+}
+/* brilho de acento por trás do conteúdo (dá profundidade no grid, o look padrão) */
+.pat-grid::after {
+  content: ""; position: absolute; left: 30%; top: 42%; width: 60%; height: 60%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, {{accent}}26 0%, transparent 70%); filter: blur(12px);
+}
+
+.pat-dots {
+  background-image: radial-gradient({{surface}} 2.2px, transparent 2.2px);
+  background-size: 46px 46px; opacity: .7;
+}
+
+.pat-scanlines {
+  background-image: repeating-linear-gradient(0deg, {{surface}} 0 2px, transparent 2px 8px);
+  opacity: .5;
+}
+
+.pat-mesh {
+  background:
+    radial-gradient(55% 55% at 18% 22%, {{accent}}24 0%, transparent 60%),
+    radial-gradient(50% 50% at 85% 82%, {{accent}}16 0%, transparent 60%);
+}
+
+.pat-hatch {
+  background-image: repeating-linear-gradient(45deg, {{surface}} 0 1px, transparent 1px 17px);
+  opacity: .5;
+}
+
+.pat-noise {
+  background-image: url("{{noiseUri}}");
+  background-size: 160px 160px; opacity: .28;
+}
+
+/* ---- helpers ---- */
+.hl { color: {{accent}}; }               /* destaque de palavra na cor de acento */
+.ic { display: inline-block; line-height: 0; }
+.ic svg { width: 100%; height: 100%; display: block; }

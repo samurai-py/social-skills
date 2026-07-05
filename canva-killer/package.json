@@ -1,0 +1,20 @@
+{
+  "name": "canva-killer",
+  "version": "0.1.0",
+  "description": "Gerador de artes de mídia social a partir de templates em código (HTML/CSS/SVG), preenchidos por marca. Pensado pra ser dirigido por um agente de IA via MCP — o autofill que o Canva tranca no plano Enterprise, aberto e local.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "canva-killer": "./src/render.mjs"
+  },
+  "scripts": {
+    "render": "node src/render.mjs",
+    "studio": "node studio/server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "lucide-static": "^1.23.0",
+    "playwright-core": "^1.58.2",
+    "zod": "^4.4.3"
+  }
+}

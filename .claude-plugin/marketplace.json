@@ -1,0 +1,29 @@
+{
+  "name": "social-skills",
+  "owner": { "name": "mario" },
+  "metadata": {
+    "description": "Skills sociais/marketing organizadas por MARCA (vertical slice) + ferramentas genéricas. Cada marca é um plugin; canais (LinkedIn, blog, Instagram, TikTok) são skills dentro dela; a voz vive na fatia, a mecânica no shared/."
+  },
+  "plugins": [
+    {
+      "name": "marketing-tools",
+      "source": "./plugins/marketing-tools",
+      "description": "Ferramentas genéricas de SEO e Google Ads (brand-agnostic): brand-voice, content-writer, competitor-analysis, gap-zone, rank-tracker, ai-shopping, static-ads, ads-audit, waste-finder."
+    },
+    {
+      "name": "mario",
+      "source": "./user/plugins/mario",
+      "description": "Marca pessoal do Mário — voz pessoal (tech-Twitter, analogia mordaz, call-outs ancorados em técnica). Canal: LinkedIn. Exemplo de plugin de marca privado — vive em user/, não é publicado no repo."
+    },
+    {
+      "name": "4gentes",
+      "source": "./user/plugins/4gentes",
+      "description": "Conteúdo da 4gentes — voz da empresa. Canais: blog (Strapi, op-ed FMB + Lima Barreto + nerd), LinkedIn e Instagram. Exemplo de plugin de marca privado — vive em user/, não é publicado no repo."
+    },
+    {
+      "name": "katana",
+      "source": "./user/plugins/katana",
+      "description": "Katana (marca de roupas) — voz da marca. Canais: Instagram principal, Instagram submarca e TikTok. Exemplo de plugin de marca privado — vive em user/, não é publicado no repo."
+    }
+  ]
+}
