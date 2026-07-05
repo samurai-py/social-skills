@@ -80,6 +80,8 @@
   .pat-scanlines { background-image:repeating-linear-gradient(0deg,var(--surface) 0 2px,transparent 2px 8px); opacity:.5; }
   .pat-mesh { background:radial-gradient(55% 55% at 18% 22%,color-mix(in srgb,var(--accent) 16%,transparent) 0%,transparent 60%),radial-gradient(50% 50% at 85% 82%,color-mix(in srgb,var(--accent) 9%,transparent) 0%,transparent 60%); }
   .pat-hatch { background-image:repeating-linear-gradient(45deg,var(--surface) 0 1px,transparent 1px 17px); opacity:.5; }
+  .pat-noise { background-size:160px 160px; opacity:.28; } /* background-image set from JS: NOISE_URI (matches render.mjs's algorithm) */
+  input[type=range] { width:100%; accent-color:var(--accent); background:none; padding:4px 0; }
   /* icon browser */
   #modal { position:fixed; inset:0; background:#000b; display:none; align-items:center; justify-content:center; z-index:50; }
   #modal .box { background:var(--panel); border:1px solid var(--line); border-radius:12px; width:640px; max-width:92vw; max-height:80vh; padding:16px; display:flex; flex-direction:column; }
@@ -117,6 +119,7 @@
     <label style="margin-top:0">Brand</label><select id="brand" class="brandsel"></select>
     <label>Template</label><select id="tpl"></select>
     <label>Background pattern</label><select id="pattern" class="patsel"></select>
+    <label>Pattern opacity</label><input id="patternOpacity" type="range" min="0" max="100" value="100">
     <label>Background image (local path)</label><input id="bgimage" placeholder="/home/.../photo.jpg">
     <p class="hint">Live preview. Export generates a PNG @2x.</p>
   </div>
@@ -134,6 +137,7 @@
     <label>Size</label>
     <select id="size"><option value="1080x1080">Post 1080×1080</option><option value="1080x1920">Story 1080×1920</option><option value="1080x1350">Carousel 1080×1350</option><option value="1200x630">Cover/OG 1200×630</option></select>
     <label>Background pattern</label><select id="aPattern" class="patsel"></select>
+    <label>Pattern opacity</label><input id="aPatternOpacity" type="range" min="0" max="100" value="100">
     <label>Add block</label>
     <div class="palette">
       <button class="act ghost" data-add="titulo">+ Title</button>
@@ -178,6 +182,10 @@
 const $=(s,r=document)=>r.querySelector(s);
 const SYS=new Set(['baseStyles','patternClass','bgstyle','noiseUri','bg','surface','text','muted','accent','accent2','display','mono','pixel','googleFonts','logoText','logoSvg','handle','name']);
 const PATTERNS=['grid','dots','scanlines','mesh','hatch','noise','none'];
+// same algorithm as render.mjs's NOISE_SVG/NOISE_URI — duplicated here because the editor renders
+// patterns with its own live CSS (var(--surface)/var(--accent)) instead of fetching {{tokens}} HTML.
+const NOISE_SVG='<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>';
+const NOISE_URI='data:image/svg+xml,'+encodeURIComponent(NOISE_SVG);
 const st={brands:[],brand:null,tpl:null,tplRaw:'',dims:[1080,1080],fields:{},blocks:[],sel:null,uid:0,iconCb:null};
 const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
 const snap=v=>Math.round(v/20)*20;
@@ -211,11 +219,12 @@ async function boot(){
   $('#openTpl').innerHTML='<option value="">— new (blank) —</option>'+tpls.map(t=>`<option>${t}</option>`).join('');
   $('#tpl').onchange=loadTemplate;
   $('#pattern').onchange=previewCompose;
+  $('#patternOpacity').oninput=debounce(previewCompose,80);
   $('#bgimage').oninput=debounce(previewCompose,350);
   $('#exportPng').onclick=exportPng;
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setMode(t.dataset.mode));
   document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addBlock(b.dataset.add));
-  $('#size').onchange=setupCanvas; $('#aPattern').onchange=()=>renderPattern();
+  $('#size').onchange=setupCanvas; $('#aPattern').onchange=()=>renderPattern(); $('#aPatternOpacity').oninput=()=>renderPattern();
   $('#saveTpl').onclick=saveTemplate; $('#openTpl').onchange=openTemplate;
   $('#iconSearch').oninput=debounce(fillIconGrid,250);
   $('#modal').onclick=e=>{ if(e.target.id==='modal') $('#modal').style.display='none'; };
@@ -253,7 +262,7 @@ async function loadTemplate(){
   document.querySelectorAll('[data-tok]').forEach(el=>el.oninput=debounce(()=>{st.fields[el.dataset.tok]=el.value;previewCompose();},300));
   previewCompose();
 }
-const composeData=()=>{const d={...st.fields,pattern:$('#pattern').value};const bg=$('#bgimage').value.trim();if(bg)d.bgimage=bg;return d;};
+const composeData=()=>{const d={...st.fields,pattern:$('#pattern').value,patternOpacity:(+$('#patternOpacity').value)/100};const bg=$('#bgimage').value.trim();if(bg)d.bgimage=bg;return d;};
 async function previewCompose(){
   if(!st.tpl)return; // hasn't loaded a template yet (avoids a POST with a null templateId on boot)
   const html=await (await fetch('/api/preview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({brandId:st.brand.id,templateId:st.tpl,data:composeData()})})).text();
@@ -268,7 +277,9 @@ async function exportPng(){ const m=$('#msgC'); m.textContent='Rendering…';
 
 /* ---- CREATE/EDIT ---- */
 function setupCanvas(){ const [w,h]=$('#size').value.split('x').map(Number); st.dims=[w,h]; const c=$('#edcanvas'); c.style.width=w+'px'; c.style.height=h+'px'; applyVars(); renderPattern(); renderBlocks(); rafFit('#canvasWrap',w,h); }
-function renderPattern(){ $('#edcanvas .bgp').className='bgp pat-'+$('#aPattern').value; }
+function renderPattern(){ const el=$('#edcanvas .bgp'); el.className='bgp pat-'+$('#aPattern').value;
+  el.style.backgroundImage=$('#aPattern').value==='noise'?`url("${NOISE_URI}")`:'';
+  el.style.opacity=(+$('#aPatternOpacity').value)/100; }
 const EFFECT_CSS={none:'',grayscale:'grayscale(1)',sepia:'sepia(.7)',invert:'invert(1)',contrast:'contrast(1.4)','low-contrast':'contrast(.75)',bright:'brightness(1.3)',dark:'brightness(.6)',saturate:'saturate(1.7)',desaturate:'saturate(.35)',blur:'blur(4px)',sharpen:'contrast(1.25) saturate(1.1)',warm:'sepia(.4) saturate(1.3) hue-rotate(-15deg)',cool:'saturate(1.1) hue-rotate(180deg)',duotone:'grayscale(1) contrast(1.2) sepia(.6) saturate(4) hue-rotate(5deg)',fade:'contrast(.85) brightness(1.1) saturate(.8)',noir:'grayscale(1) contrast(1.5) brightness(.9)',vivid:'saturate(1.9) contrast(1.15)','hue-shift':'hue-rotate(90deg)',dreamy:'blur(1px) brightness(1.1) saturate(1.3)'};
 const EFFECTS=Object.keys(EFFECT_CSS);
 const DEF={ titulo:{text:'Your title here',token:'titulo',font:'disp',size:96,weight:700,color:'text',ls:-2,rot:0},
@@ -421,7 +432,7 @@ function serialize(){ const [w,h]=st.dims;
 }
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function saveTemplate(){ const name=$('#tplName').value.trim(); const m=$('#msgA'); if(!name){m.textContent='Give it a name.';return;}
-  const meta={size:$('#size').value,pattern:$('#aPattern').value};
+  const meta={size:$('#size').value,pattern:$('#aPattern').value,patternOpacity:(+$('#aPatternOpacity').value)/100};
   // the converter runs ON THE SERVER (code): sends the model, gets back the saved HTML
   const r=await (await fetch('/api/save-template',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,dims:st.dims,blocks:st.blocks,meta})})).json();
   m.textContent=r.ok?`Saved: ${r.id}.html ✓`:('Error: '+r.error);
@@ -432,6 +443,7 @@ async function openTemplate(){ const id=$('#openTpl').value; if(!id){ st.blocks=
   if(!r.editable){ $('#msgA').textContent='"'+id+'" was made in code — not visually editable.'; return; }
   st.blocks=r.blocks.map(b=>({...b})); st.uid=Math.max(0,...st.blocks.map(b=>b.id||0)); st.sel=null; $('#tplName').value=id;
   if(r.meta?.size){ $('#size').value=r.meta.size; } if(r.meta?.pattern){ $('#aPattern').value=r.meta.pattern; }
+  if(r.meta?.patternOpacity!=null){ $('#aPatternOpacity').value=Math.round(r.meta.patternOpacity*100); }
   setupCanvas(); $('#msgA').textContent='Editing "'+id+'".';
 }
 
@@ -472,8 +484,8 @@ function setMode(m){ document.querySelectorAll('.tab').forEach(t=>t.classList.to
   else { buildBrandForm(); }
   persist();
 }
-function persist(){ try{ localStorage.setItem('ck-studio',JSON.stringify({b:st.brand?.id,tpl:$('#tpl').value,fields:st.fields,pat:$('#pattern').value,bg:$('#bgimage').value,size:$('#size').value,apat:$('#aPattern').value,blocks:st.blocks,uid:st.uid})); const d=new Date(); $('#saveInd').textContent='saved '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }catch(e){} }
-function restore(){ try{ const s=JSON.parse(localStorage.getItem('ck-studio')||'{}'); if(s.b&&st.brands.find(x=>x.id===s.b)){$('#brand').value=s.b;setBrand(s.b);} if(s.fields)st.fields=s.fields; if(s.pat)$('#pattern').value=s.pat; if(s.bg)$('#bgimage').value=s.bg; if(s.size)$('#size').value=s.size; if(s.apat)$('#aPattern').value=s.apat; if(s.blocks){st.blocks=s.blocks;st.uid=s.uid||Math.max(0,...s.blocks.map(b=>b.id||0));} }catch(e){} }
+function persist(){ try{ localStorage.setItem('ck-studio',JSON.stringify({b:st.brand?.id,tpl:$('#tpl').value,fields:st.fields,pat:$('#pattern').value,patOp:$('#patternOpacity').value,bg:$('#bgimage').value,size:$('#size').value,apat:$('#aPattern').value,apatOp:$('#aPatternOpacity').value,blocks:st.blocks,uid:st.uid})); const d=new Date(); $('#saveInd').textContent='saved '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }catch(e){} }
+function restore(){ try{ const s=JSON.parse(localStorage.getItem('ck-studio')||'{}'); if(s.b&&st.brands.find(x=>x.id===s.b)){$('#brand').value=s.b;setBrand(s.b);} if(s.fields)st.fields=s.fields; if(s.pat)$('#pattern').value=s.pat; if(s.patOp)$('#patternOpacity').value=s.patOp; if(s.bg)$('#bgimage').value=s.bg; if(s.size)$('#size').value=s.size; if(s.apat)$('#aPattern').value=s.apat; if(s.apatOp)$('#aPatternOpacity').value=s.apatOp; if(s.blocks){st.blocks=s.blocks;st.uid=s.uid||Math.max(0,...s.blocks.map(b=>b.id||0));} }catch(e){} }
 window.addEventListener('beforeunload',persist);
 window.addEventListener('resize',()=>{ const [w,h]=st.dims; if(view()==='compose')fitScale('#frameWrap',w,h); else if(view()==='author')fitScale('#canvasWrap',w,h); });
 initIdentity();

@@ -140,6 +140,9 @@ export function fillTemplate(html, brand, data = {}) {
     bgstyle: resolveBgStyle(data.bgimage), // wins over `data` above; never leaves the template with a raw bgstyle
     // background pattern class: data.pattern > brand.pattern > 'grid'
     patternClass: `pat-${data.pattern || brand.pattern || 'grid'}`,
+    // overall pattern intensity dial (multiplies on top of each pattern's own opacity):
+    // data.patternOpacity > brand.patternOpacity > 1 (fully visible, same as before this existed)
+    patternOpacity: data.patternOpacity ?? brand.patternOpacity ?? 1,
     noiseUri: NOISE_URI,
   };
   const fillTokens = (s) => s.replace(/\{\{(\w+)\}\}/g, (_, k) => (tokens[k] != null ? String(tokens[k]) : ''));
