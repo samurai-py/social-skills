@@ -194,7 +194,7 @@ usually outsourced to an agency.
 
 <p align="center">
   <a href="https://waifucorp.org">
-    <img src="identity/waifucorp-logo.png" width="150" alt="wAIfu Corp logo">
+    <img src="identity/waifucorp-logo.svg" width="150" alt="wAIfu Corp logo">
   </a>
 </p>
 
