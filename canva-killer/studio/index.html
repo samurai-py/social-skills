@@ -120,7 +120,7 @@
     <label>Background image (local path)</label><input id="bgimage" placeholder="/home/.../photo.jpg">
     <p class="hint">Live preview. Export generates a PNG @2x.</p>
   </div>
-  <div class="stage"><div id="frameWrap"><iframe id="frame"></iframe></div></div>
+  <div class="stage"><div id="frameWrap"><iframe id="frame" sandbox=""></iframe></div></div>
   <div class="props">
     <label style="margin-top:0">Content</label><div id="fields"></div>
     <button class="act primary" id="exportPng">Export PNG</button><div class="msg" id="msgC"></div>
@@ -462,7 +462,7 @@ function buildBrandForm(){ const b=st.brand; if(!b)return; const box=$('#brandFo
 }
 async function brandPreview(){ const el=$('#brandPreview'); if(!el||view()!=='brand')return;
   const html=await (await fetch('/api/preview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({brandId:st.brand.id,templateId:'post-square',data:{kicker:'BRAND PREVIEW',titulo:'Colors & fonts <span class="hl">live</span>',cta:'canva-killer',topright:'2026'}})})).text();
-  el.innerHTML=`<iframe id="bframe" style="width:1080px;height:1080px;border:0"></iframe>`; const f=$('#bframe'); f.srcdoc=html; f.style.transformOrigin='top left'; f.style.transform='scale(0.388)'; el.style.height='420px'; }
+  el.innerHTML=`<iframe id="bframe" sandbox="" style="width:1080px;height:1080px;border:0"></iframe>`; const f=$('#bframe'); f.srcdoc=html; f.style.transformOrigin='top left'; f.style.transform='scale(0.388)'; el.style.height='420px'; }
 
 /* ---- mode + persistence ---- */
 function setMode(m){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));

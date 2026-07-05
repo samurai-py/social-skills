@@ -33,6 +33,35 @@ async function readBody(req) {
   for await (const c of req) chunks.push(c);
   return Buffer.concat(chunks).toString('utf8');
 }
+// Parses a JSON POST body defensively: this is a local, unauthenticated dev server, so the two
+// checks below are the only thing standing between "open a malicious page in the same browser"
+// and CSRF file read/write. Content-Type must genuinely be application/json (blocks the classic
+// text/plain <form> trick that smuggles JSON past a same-origin-policy-exempt request), and any
+// present Origin/Referer must point at this same server (blocks plain cross-origin fetch/XHR).
+// Strips script execution vectors from a user-uploaded SVG before it's saved: <script>/<foreignObject>
+// tags, on*="" event handlers, and javascript:/data:text/html URIs. Not a full sanitizer (no DOM
+// parser here), but closes the practical XSS path for an icon/logo that later gets inlined via innerHTML.
+function sanitizeSvg(svg) {
+  return svg
+    .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<foreignObject[\s\S]*?<\/foreignObject\s*>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/(href|xlink:href)\s*=\s*"(?:\s*javascript:|\s*data:text\/html)[^"]*"/gi, '$1="#"')
+    .replace(/(href|xlink:href)\s*=\s*'(?:\s*javascript:|\s*data:text\/html)[^']*'/gi, "$1='#'");
+}
+
+function readJsonBody(req) {
+  const ct = req.headers['content-type'] || '';
+  if (!ct.toLowerCase().startsWith('application/json')) {
+    throw Object.assign(new Error('expected content-type: application/json'), { statusCode: 415 });
+  }
+  const origin = req.headers.origin || req.headers.referer;
+  if (origin && new URL(origin).host !== req.headers.host) {
+    throw Object.assign(new Error('cross-origin request rejected'), { statusCode: 403 });
+  }
+  return readBody(req).then((body) => JSON.parse(body));
+}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -59,18 +88,18 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, fs.readFileSync(file, 'utf8'), 'text/plain; charset=utf-8');
     }
     if (p === '/api/preview' && req.method === 'POST') {
-      const { brandId, templateId, data } = JSON.parse(await readBody(req));
+      const { brandId, templateId, data } = await readJsonBody(req);
       const tpl = fs.readFileSync(resolveTemplatePath(path.basename(templateId)), 'utf8');
       return send(res, 200, fillTemplate(tpl, getBrand(brandId), data || {}), 'text/html; charset=utf-8');
     }
     if (p === '/api/render' && req.method === 'POST') {
-      const { brandId, templateId, data } = JSON.parse(await readBody(req));
+      const { brandId, templateId, data } = await readJsonBody(req);
       const out = path.join(USER_ROOT, 'out', `studio-${path.basename(templateId)}.png`);
       await render({ brandId, templateId, data: data || {}, out });
       return send(res, 200, fs.readFileSync(out), 'image/png');
     }
     if (p === '/api/save-template' && req.method === 'POST') {
-      const { name, dims, blocks, meta } = JSON.parse(await readBody(req));
+      const { name, dims, blocks, meta } = await readJsonBody(req);
       const safe = String(name || '').replace(/[^\w-]/g, '').slice(0, 60);
       if (!safe) return json(res, { error: 'invalid name' }, 400);
       // templates authored in the studio are user data -> user/canva-killer/templates/
@@ -97,7 +126,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, resolveIcon(url.searchParams.get('name') || '') || '<svg/>', 'image/svg+xml; charset=utf-8');
     }
     if (p === '/api/save-brand' && req.method === 'POST') {
-      const { brand } = JSON.parse(await readBody(req));
+      const { brand } = await readJsonBody(req);
       const id = String(brand?.id || '').replace(/[^\w-]/g, '').slice(0, 60);
       if (!id) return json(res, { error: 'invalid brand.id' }, 400);
       // real brands are user data -> user/canva-killer/brands/
@@ -106,20 +135,25 @@ const server = http.createServer(async (req, res) => {
       return json(res, { ok: true, id });
     }
     if (p === '/api/upload-logo' && req.method === 'POST') {
-      const { name, svg } = JSON.parse(await readBody(req));
+      const { name, svg } = await readJsonBody(req);
       const safe = String(name || '').replace(/[^\w-]/g, '').slice(0, 60);
       if (!safe || !svg) return json(res, { error: 'name/svg required' }, 400);
       // authored SVGs (logo, custom icons) are user data -> user/canva-killer/assets/custom/
       fs.mkdirSync(USER_CUSTOM_ICONS_DIR, { recursive: true });
       // recolor to currentColor: swaps fixed fills for currentColor (inherit the container's color)
       const recolored = svg.replace(/fill\s*:\s*#[0-9a-fA-F]{3,6}/g, 'fill: currentColor').replace(/fill="#[0-9a-fA-F]{3,6}"/g, 'fill="currentColor"');
-      fs.writeFileSync(path.join(USER_CUSTOM_ICONS_DIR, `${safe}.svg`), recolored);
+      // uploaded SVGs get inlined via innerHTML in the studio's own page (not sandboxed) — strip
+      // anything that could execute script (the icon/logo rendering only needs markup+CSS).
+      const sanitized = sanitizeSvg(recolored);
+      fs.writeFileSync(path.join(USER_CUSTOM_ICONS_DIR, `${safe}.svg`), sanitized);
       return json(res, { ok: true, ref: `custom/${safe}` });
     }
     send(res, 404, 'not found', 'text/plain');
   } catch (err) {
-    json(res, { error: err.message }, 500);
+    json(res, { error: err.message }, err.statusCode || 500);
   }
 });
 
-server.listen(PORT, () => process.stderr.write(`canva-killer studio: http://localhost:${PORT}\n`));
+// 127.0.0.1 only: this server has no auth and writes to disk on request — binding to all
+// interfaces would expose file read/write to anyone else on the same network.
+server.listen(PORT, '127.0.0.1', () => process.stderr.write(`canva-killer studio: http://localhost:${PORT}\n`));
