@@ -1,0 +1,11 @@
+# tudo específico de usuário / gerado vai aqui — padrão do social-skills (skills, canva-killer, futuros softwares)
+user/
+
+.env
+.env.*
+samples/
+**/samples/
+tmp/
+**/tmp/
+drafts/
+node_modules/

@@ -1,0 +1,7 @@
+{
+  "name": "minhamarca",
+  "version": "0.1.0",
+  "description": "Conteúdo da MinhaMarca (voz da marca). Canais: (liste aqui).",
+  "author": { "name": "seu-nome" },
+  "skills": ["./CANAL"]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "marketing-tools",
+  "version": "0.1.0",
+  "description": "Skills genéricas de SEO e Google Ads (brand-agnostic): GSC, análise de concorrentes, conteúdo, rastreio de rankings, AI shopping, auditoria de ads.",
+  "author": { "name": "mario" },
+  "skills": [
+    "./seo/brand-voice",
+    "./seo/gap-zone",
+    "./seo/competitor-analysis",
+    "./seo/content-writer",
+    "./seo/rank-tracker",
+    "./seo/ai-shopping",
+    "./seo/static-ads",
+    "./google-ads/ads-audit",
+    "./google-ads/waste-finder"
+  ]
+}

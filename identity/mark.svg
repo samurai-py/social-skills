@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<style>
+  .sq{fill:var(--bodyfill,url(#grad));}
+  @media (prefers-reduced-motion: no-preference){svg{animation:hue 6s linear infinite;}@keyframes hue{to{filter:hue-rotate(360deg);}}}
+</style>
+<linearGradient id="grad" gradientUnits="userSpaceOnUse" x1="0" y1="64" x2="64" y2="0"><stop offset="0%" stop-color="#ff3b3b"/><stop offset="18%" stop-color="#ff9a3b"/><stop offset="36%" stop-color="#ffe23b"/><stop offset="52%" stop-color="#3bff6e"/><stop offset="68%" stop-color="#3bd8ff"/><stop offset="84%" stop-color="#5a5aff"/><stop offset="100%" stop-color="#c23bff"/></linearGradient>
+<rect class="sq" x="4" y="4" width="56" height="56" rx="14"/>
+</svg>

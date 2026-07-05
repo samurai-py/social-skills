@@ -1,0 +1,16 @@
+{
+  "name": "social-skills",
+  "owner": {
+    "name": "mario"
+  },
+  "metadata": {
+    "description": "Skills sociais/marketing organizadas por MARCA (vertical slice) + ferramentas genéricas. Cada marca é um plugin; canais (LinkedIn, blog, Instagram, TikTok) são skills dentro dela; a voz vive na fatia, a mecânica no shared/."
+  },
+  "plugins": [
+    {
+      "name": "marketing-tools",
+      "source": "./plugins/marketing-tools",
+      "description": "Ferramentas genéricas de SEO e Google Ads (brand-agnostic): brand-voice, content-writer, competitor-analysis, gap-zone, rank-tracker, ai-shopping, static-ads, ads-audit, waste-finder."
+    }
+  ]
+}
