@@ -189,6 +189,19 @@ usually outsourced to an agency.
 - [ ] **Community template gallery**: import templates from URLs or gists.
 - [ ] **Mascot flourishes**: color-shifting badges, terminal banners and small chameleon touches.
 
+
+## Sponsor
+
+<p align="center">
+  <a href="https://waifucorp.org">
+    <img src="identity/waifucorp-logo.png" width="150" alt="wAIfu Corp logo">
+  </a>
+</p>
+
+<p align="center">
+  Built with support from <a href="https://waifucorp.org"><strong>wAIfu Corp</strong></a>.
+</p>
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
