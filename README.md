@@ -30,6 +30,48 @@ The rest of the repo applies the same idea to *content*: skills that interview a
 distill a style guide from real samples, and write posts (LinkedIn, Instagram, blog, TikTok) in
 that voice — plus generic SEO/Google Ads tools.
 
+## Roadmap
+
+social-skills is built for **small, solo content creators** — one person (or a tiny team)
+running a brand's whole content operation with an AI agent doing the busywork most tools assume
+you'll hire an agency for. Nothing below is built yet; roughly in the order it'd get tackled.
+
+**Core — the two features the project actually exists for:**
+
+- [ ] **Publisher** — connect a brand's real accounts (Instagram, LinkedIn, ...) so the agent can
+  post directly instead of stopping at "here's the art/copy." Realistically starts as an
+  email/webhook MVP (zero OAuth — "the post is ready, review and publish yourself") before
+  graduating to official Graph/API integrations per network, since Instagram and LinkedIn both
+  gate posting permissions behind app review.
+- [ ] **Blog automator** — connect to a WordPress (or similar) blog: see the scheduling
+  calendar, view what's already queued, and let the agent research (reusing
+  `gap-zone`/`competitor-analysis`) and write *before* it schedules the post — planning the
+  editorial calendar, not just publishing to it.
+
+**Everything else, roughly in build order:**
+
+- [ ] **Repurposing pipeline** — one long-form piece (a blog article) fans out automatically
+  into a LinkedIn post + Instagram carousel + Twitter thread, reusing `content-writer` +
+  `canva-killer` instead of writing each by hand.
+- [ ] **Analytics feedback loop** — once the Publisher exists, pull engagement back from the
+  same APIs and feed it into `brand-voice`/`content-writer`, so the tool learns which
+  topics/phrasing actually perform instead of generating in a fixed voice forever.
+- [ ] **Voice QA gate** — score a draft against `brand-profile.json` (hits the `avoid` list?
+  matches the `tone_adjectives`?) before it goes out, catching an off-voice post before a human
+  has to.
+- [ ] **More canva-killer export formats** — PDF carousels (LinkedIn's native document format
+  only accepts PDF/video, not a PNG sequence) and short animated stories (CSS animation recorded
+  to webm — the render pipeline is already headless Chromium, so this extends it, doesn't
+  rewrite it).
+- [ ] **Localization** — generate the same post in multiple languages from one
+  `brand-profile.json`, useful since the framework is English but the real brands running on it
+  often aren't.
+- [ ] **Community template gallery** — pull in a `canva-killer` template someone else authored
+  (drop-in via URL/gist) instead of only the base four. Fun, but doesn't move the needle on
+  whether someone actually adopts the tool — lower priority.
+- [ ] **Mascot-themed flourishes** — ASCII chameleon banner on `npm run studio` boot, README
+  badges that shift color, etc. Purely cosmetic; nice once the core loop works, not before.
+
 ## What's in here
 
 ```
