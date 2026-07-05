@@ -1,25 +1,25 @@
 # brands/
 
-Uma marca por arquivo `<id>.json`. Copie `_TEMPLATE.json` e preencha. Arquivos começando com
-`_` são ignorados pela listagem (`list_brands`).
+One brand per `<id>.json` file. Copy `_TEMPLATE.json` and fill it in. Files starting with
+`_` are ignored by the listing (`list_brands`).
 
-## Campos
+## Fields
 
-| Campo | O que é |
+| Field | What it is |
 |-------|---------|
-| `id` | identificador (igual ao nome do arquivo, sem `.json`) |
-| `name` | nome de exibição da marca |
-| `handle` | @ da marca (aparece no rodapé dos templates) |
-| `logoText` | wordmark curto (topo dos templates) |
-| `palette.bg` | cor de fundo do quadro |
-| `palette.surface` | cor de linhas/superfícies sutis (grid) |
-| `palette.text` | cor do texto principal |
-| `palette.muted` | cor de texto secundário (rodapé, kicker apagado) |
-| `palette.accent` | cor de destaque (highlights, barras, wordmark) |
-| `fonts.display` | família do título (CSS font-family) |
-| `fonts.mono` | família mono (kicker, rodapé, wordmark) |
-| `fonts.googleFonts` | URL de import do Google Fonts (ou remova e use fontes do sistema) |
+| `id` | identifier (same as the filename, without `.json`) |
+| `name` | brand's display name |
+| `handle` | brand's @ (shows in the templates' footer) |
+| `logoText` | short wordmark (top of the templates) |
+| `palette.bg` | frame's background color |
+| `palette.surface` | subtle lines/surfaces color (grid) |
+| `palette.text` | main text color |
+| `palette.muted` | secondary text color (footer, faded kicker) |
+| `palette.accent` | highlight color (highlights, bars, wordmark) |
+| `fonts.display` | title font family (CSS font-family) |
+| `fonts.mono` | mono font family (kicker, footer, wordmark) |
+| `fonts.googleFonts` | Google Fonts import URL (or remove it and use system fonts) |
 
-> Os nomes de `palette` e `fonts` são os `{{tokens}}` que os templates consomem
-> (`{{bg}}`, `{{accent}}`, `{{display}}`…). Se criar um token novo na marca, pode usá-lo no
-> template como `{{seutoken}}`.
+> The `palette` and `fonts` keys are the `{{tokens}}` templates consume
+> (`{{bg}}`, `{{accent}}`, `{{display}}`…). If you add a new token to the brand, you can use it
+> in the template as `{{yourtoken}}`.

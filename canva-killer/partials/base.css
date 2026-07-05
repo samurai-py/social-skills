@@ -1,19 +1,19 @@
-/* canva-killer — base.css (injetado nos templates via {{baseStyles}}).
-   Reset + camadas de fundo (imagem, overlay, padrões procedurais) + helpers.
-   É preenchido com os tokens da marca antes de injetar, então usa {{bg}}, {{surface}},
-   {{accent}}, {{noiseUri}} normalmente. Fica num <style>, não num atributo — pode usar aspas duplas. */
+/* canva-killer — base.css (injected into templates via {{baseStyles}}).
+   Reset + background layers (image, overlay, procedural patterns) + helpers.
+   Filled with the brand's tokens before injecting, so it uses {{bg}}, {{surface}},
+   {{accent}}, {{noiseUri}} normally. Lives in a <style>, not an attribute — double quotes are fine. */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { background: #000; }
 
-/* Camadas de fundo. Ficam DENTRO do #canvas, que deve ter position:relative + isolation:isolate.
-   Ordem (de trás pra frente): foto (-3) -> overlay (-2) -> padrão (-1) -> conteúdo (>=0). */
+/* Background layers. Live INSIDE #canvas, which must have position:relative + isolation:isolate.
+   Order (back to front): photo (-3) -> overlay (-2) -> pattern (-1) -> content (>=0). */
 .bg-photo   { position: absolute; inset: 0; z-index: -3; background-size: cover; background-position: center; }
 .bg-overlay { position: absolute; inset: 0; z-index: -2;
   background: linear-gradient(180deg, {{bg}}d9 0%, {{bg}}59 45%, {{bg}}f2 100%); }
 .bg-pattern { position: absolute; inset: 0; z-index: -1; }
 
-/* ---- padrões procedurais (escolha via data.pattern -> classe pat-<nome>) ---- */
+/* ---- procedural patterns (chosen via data.pattern -> class pat-<name>) ---- */
 .pat-none {}
 
 .pat-grid {
@@ -22,7 +22,7 @@ html, body { background: #000; }
     linear-gradient(90deg, {{surface}} 1px, transparent 1px);
   background-size: 54px 54px; opacity: .55;
 }
-/* brilho de acento por trás do conteúdo (dá profundidade no grid, o look padrão) */
+/* accent glow behind the content (adds depth to the grid, the default look) */
 .pat-grid::after {
   content: ""; position: absolute; left: 30%; top: 42%; width: 60%; height: 60%;
   transform: translate(-50%, -50%);
@@ -56,6 +56,6 @@ html, body { background: #000; }
 }
 
 /* ---- helpers ---- */
-.hl { color: {{accent}}; }               /* destaque de palavra na cor de acento */
+.hl { color: {{accent}}; }               /* highlight a word in the accent color */
 .ic { display: inline-block; line-height: 0; }
 .ic svg { width: 100%; height: 100%; display: block; }

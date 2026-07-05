@@ -1,7 +1,7 @@
 {
-  "name": "minhamarca",
+  "name": "mybrand",
   "version": "0.1.0",
-  "description": "Conteúdo da MinhaMarca (voz da marca). Canais: (liste aqui).",
-  "author": { "name": "seu-nome" },
-  "skills": ["./CANAL"]
+  "description": "MyBrand content (brand voice). Channels: (list here).",
+  "author": { "name": "your-name" },
+  "skills": ["./CHANNEL"]
 }

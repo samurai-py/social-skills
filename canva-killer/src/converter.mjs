@@ -1,12 +1,12 @@
-// canva-killer — conversor bidirecional (em código) entre o MODELO DE BLOCOS e o HTML do template.
-// Reusado pelo agente de IA e pelo studio. Estratégia robusta: o HTML gerado EMBUTE o próprio
-// modelo de blocos num <script type="application/json" data-ck-model>. Assim htmlToBlocks lê o
-// modelo direto (sem parsear CSS ao contrário) e o round-trip é fiel. O <script> não renderiza
-// e fica no <head>, então não afeta o screenshot do #canvas.
+// canva-killer — bidirectional converter (in code) between the BLOCK MODEL and the template's HTML.
+// Reused by the AI agent and by the studio. Robust strategy: the generated HTML EMBEDS the block
+// model itself in a <script type="application/json" data-ck-model>. That way htmlToBlocks reads
+// the model directly (no reverse-parsing CSS) and the round-trip is faithful. The <script> doesn't
+// render and lives in the <head>, so it doesn't affect the #canvas screenshot.
 
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-// ~20 efeitos genéricos de imagem (presets de CSS filter). Compartilhados por IA e UI.
+// ~20 generic image effects (CSS filter presets). Shared by the AI and the UI.
 export const EFFECTS = {
   none: '', grayscale: 'grayscale(1)', sepia: 'sepia(.7)', invert: 'invert(1)',
   contrast: 'contrast(1.4)', 'low-contrast': 'contrast(.75)', bright: 'brightness(1.3)', dark: 'brightness(.6)',
@@ -20,7 +20,7 @@ export const EFFECTS = {
 const rotCss = (b) => (b.rot ? `transform:rotate(${b.rot}deg);` : '');
 const filterCss = (b) => { const f = EFFECTS[b.effect] || ''; return f ? `filter:${f};` : ''; };
 
-// CSS de uma barra de acento, com {{cor}} como token (resolvido no render pela cor da marca).
+// CSS for an accent bar, with {{color}} as a token (resolved at render time by the brand's color).
 function barCss(b) {
   const col = `{{${b.color}}}`;
   const rad = b.radius ? `border-radius:${b.radius}px;` : '';
@@ -29,12 +29,12 @@ function barCss(b) {
     case 'block': return `width:${b.w}px;height:${b.h}px;background:${col};${rad}`;
     case 'vertical': return `width:${b.h}px;height:${b.w}px;background:${col};${rad}`;
     case 'dots': return `width:${b.w}px;height:${b.h}px;background-image:radial-gradient(${col} 42%,transparent 44%);background-size:${b.h * 1.6}px ${b.h}px;`;
-    default: return `width:${b.w}px;height:${b.h}px;background:${col};${rad}`; // underline
+    default: return `width:${b.w}px;height:${b.h}px;background:${col};${rad}`; // underline style
   }
 }
 
-// Um bloco -> elemento HTML posicionado. Todos suportam `rot` (rotação). Tokens {{...}} são
-// resolvidos no render pela marca. Tipos: titulo/kicker/texto, bar, icon, logo, image, window.
+// One block -> a positioned HTML element. All support `rot` (rotation). {{...}} tokens are
+// resolved at render time by the brand. Types: title/kicker/text, bar, icon, logo, image, window.
 function blockToEl(b) {
   const pos = `position:absolute;left:${b.x}px;top:${b.y}px;`;
   const rot = rotCss(b);
@@ -44,14 +44,14 @@ function blockToEl(b) {
   if (b.type === 'icon') return `    <span class="ic" style="${pos}${rot}width:${b.size}px;height:${b.size}px;color:{{${b.color}}}">{{icon:${b.icon}}}</span>`;
   if (b.type === 'logo') return `    <span style="${pos}${rot}height:${b.size}px;color:{{${b.color}}};display:flex">{{logoSvg}}</span>`;
 
-  // Imagem avulsa: caixa w×h (crop por object-fit cover + posição), cantos, efeito, rotação.
+  // Standalone image: w×h box (crop via object-fit cover + position), corners, effect, rotation.
   if (b.type === 'image') {
     const rad = b.radius ? `border-radius:${b.radius}px;` : '';
     return `    <div style="${pos}${rot}width:${b.w}px;height:${b.h}px;background-image:url('${b.src || ''}');background-size:${b.fit || 'cover'};background-position:${b.bgpos || 'center'};background-repeat:no-repeat;overflow:hidden;${rad}${filterCss(b)}"></div>`;
   }
 
-  // Janela/moldura retrô (cara Hyprland/terminal): title bar com bolinha + título + _ □ ✕.
-  // Segura uma imagem (b.src) ou fica vazia. bar = altura da title bar.
+  // Retro window/frame (Hyprland/terminal look): title bar with a dot + title + _ □ ✕.
+  // Holds an image (b.src) or stays empty. bar = title bar height.
   if (b.type === 'window') {
     const bar = b.bar || 40;
     const rad = b.radius != null ? b.radius : 14;
@@ -66,18 +66,18 @@ function blockToEl(b) {
     </div>`;
   }
 
-  // Texto (titulo/kicker/texto). `w` opcional = largura (permite quebra/resize horizontal).
+  // Text (title/kicker/body). Optional `w` = width (allows wrapping/horizontal resize).
   const font = b.font === 'mono' ? 'mono' : 'display';
   const content = b.token ? `{{${b.token}}}` : esc(b.text);
   const width = b.w ? `width:${b.w}px;` : '';
   return `    <div style="${pos}${rot}${width}font-family:{{${font}}};font-size:${b.size}px;font-weight:${b.weight};color:{{${b.color}}};letter-spacing:${b.ls || 0}px;line-height:1.05;${b.upper ? 'text-transform:uppercase;' : ''}">${content}</div>`;
 }
 
-// MODELO -> HTML. `model` = { dims:[w,h], blocks:[...], meta:{...} }.
+// MODEL -> HTML. `model` = { dims:[w,h], blocks:[...], meta:{...} }.
 export function blocksToHtml(model) {
   const { dims = [1080, 1080], blocks = [], meta = {} } = model || {};
   const [w, h] = dims;
-  // embute o modelo; escapa "<" pra não fechar o <script> caso um texto contenha "</script>".
+  // embed the model; escape "<" so it doesn't close the <script> if a text contains "</script>".
   const embedded = JSON.stringify({ dims, blocks, meta }).replace(/</g, '\\u003c');
   const body = blocks.map(blockToEl).join('\n');
   return `<!doctype html>
@@ -98,7 +98,7 @@ ${body}
 </body></html>`;
 }
 
-// HTML -> MODELO. Lê o modelo embutido. Retorna null se o template não tem modelo (só-código).
+// HTML -> MODEL. Reads the embedded model. Returns null if the template has no model (code-only).
 export function htmlToBlocks(html) {
   const m = String(html).match(/<script type="application\/json" data-ck-model>([\s\S]*?)<\/script>/);
   if (!m) return null;

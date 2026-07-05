@@ -1,14 +1,14 @@
-// Gera os SVGs do mascote (camaleão pixel) e do mark/favicon a partir de mapas ASCII.
-// 1 caractere = 1 pixel (célula 4×4). Rodar: node gen-mascotes.mjs
-// legenda: . vazio | # corpo | o branco de olho | p pupila | m boca/língua | B galho | t dedinhos | F pixel capturado
+// Generates the mascot (pixel chameleon) SVGs and the mark/favicon from ASCII maps.
+// 1 character = 1 pixel (4×4 cell). Run: node gen-mascotes.mjs
+// legend: . empty | # body | o eye white | p pupil | m mouth/tongue | B branch | t toes | F captured pixel
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// Regra da identidade: corpo em ESPECTRO quando nenhuma marca está carregada;
-// com marca, sobrescrever --bodyfill com a cor de acento dela (os SVGs são inlináveis).
+// Identity rule: SPECTRUM body when no brand is loaded;
+// with a brand, override --bodyfill with its accent color (the SVGs are inlinable).
 const VARIANTS = {
   'mascote-classico': [
     "...............###......",
@@ -33,7 +33,7 @@ const VARIANTS = {
     "..#..#..................",
     "...##...................",
   ],
-  'mascote-chibi': [ // padrão
+  'mascote-chibi': [ // default
     ".........######.....",
     "........#######.....",
     "........#####ooo....",
@@ -95,7 +95,7 @@ const VARIANTS = {
     ".#..#.....................",
     "..##......................",
   ],
-  'mascote-frente': [ // tela de abertura + README
+  'mascote-frente': [ // splash screen + README
     "........##........",
     ".......####.......",
     "....##########....",
@@ -141,7 +141,7 @@ for (const [name, map] of Object.entries(VARIANTS)) {
   console.log(`${name}.svg (${W*C}×${H*C})`);
 }
 
-// mark/favicon: o quadrado que troca de cor (espectro neutro → cor da marca)
+// mark/favicon: the square that changes color (neutral spectrum → brand color)
 const mark = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <style>
   .sq{fill:var(--bodyfill,url(#grad));}
@@ -152,4 +152,4 @@ const mark = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 </svg>
 `;
 writeFileSync(join(HERE, 'mark.svg'), mark);
-console.log('mark.svg (favicon/quadrado)');
+console.log('mark.svg (favicon/square)');

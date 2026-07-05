@@ -8,14 +8,14 @@
       "command": "npx",
       "args": ["-y", "@adsagent/mcp-server"],
       "env": {
-        "ADSAGENT_API_KEY": "CONFIGURE_SUA_KEY_AQUI"
+        "ADSAGENT_API_KEY": "SET_YOUR_KEY_HERE"
       }
     },
     "apify": {
       "command": "npx",
       "args": ["-y", "@apify/mcp-server"],
       "env": {
-        "APIFY_TOKEN": "CONFIGURE_SEU_TOKEN_AQUI"
+        "APIFY_TOKEN": "SET_YOUR_TOKEN_HERE"
       }
     }
   }
