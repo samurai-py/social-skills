@@ -1,8 +1,8 @@
 {
-  "id": "minhamarca",
-  "name": "Minha Marca",
-  "handle": "@minhamarca",
-  "logoText": "MINHA.MARCA",
+  "id": "mybrand",
+  "name": "My Brand",
+  "handle": "@mybrand",
+  "logoText": "MY.BRAND",
   "palette": {
     "bg": "#080c0a",
     "surface": "#14201a",

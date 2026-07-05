@@ -1,7 +1,7 @@
 {
   "name": "canva-killer",
   "version": "0.1.0",
-  "description": "Gerador de artes de social a partir de templates em código (HTML/CSS/SVG), por marca. Dirigível por agente via MCP (render, render_carousel) + skill svg-builder pra ícones custom.",
+  "description": "Social art generator from code-based templates (HTML/CSS/SVG), per brand. Drivable by an agent via MCP (render, render_carousel) + svg-builder skill for custom icons.",
   "author": { "name": "mario" },
   "skills": ["./skills/svg-builder"]
 }

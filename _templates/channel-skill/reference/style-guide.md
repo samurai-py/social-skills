@@ -1,22 +1,22 @@
-# Guia de estilo — CANAL (voz da MARCA)
+# Style guide — CHANNEL (BRAND's voice)
 
-> _(a definir)_ — ainda não destilado. Solte samples em `samples/` e rode o fluxo
-> "Aprender o estilo" do `SKILL.md` pra preencher isto.
+> _(to be defined)_ — not distilled yet. Drop samples in `samples/` and run the
+> "Learn the style" flow in `SKILL.md` to fill this in.
 
-## Quem escreve / a quem fala
-_(a definir)_
+## Who writes / who they're talking to
+_(to be defined)_
 
-## Tom de voz
-_(a definir)_
+## Tone of voice
+_(to be defined)_
 
-## Formato (gancho, parágrafos, emoji, hashtags, CTA)
-_(a definir)_
+## Format (hook, paragraphs, emoji, hashtags, CTA)
+_(to be defined)_
 
-## Temas recorrentes
-_(a definir)_
+## Recurring topics
+_(to be defined)_
 
-## O que evitar
-_(a definir)_
+## What to avoid
+_(to be defined)_
 
-## Referências reais (frases das samples)
-_(a definir)_
+## Real references (lines from the samples)
+_(to be defined)_

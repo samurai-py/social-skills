@@ -1,22 +1,22 @@
 #!/usr/bin/env node
-// canva-killer — wrapper MCP.
-// Expõe o core de render (src/render.mjs) como tools pra qualquer agente de IA:
+// canva-killer — MCP wrapper.
+// Exposes the render core (src/render.mjs) as tools for any AI agent:
 //   list_brands · list_templates · render
-// stdio only (é como os plugins do Claude Code sobem o servidor via .mcp.json).
+// stdio only (this is how Claude Code plugins bring up the server via .mcp.json).
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { render, renderCarousel, listBrands, listTemplates, getBrand } from './render.mjs';
 
-// stdout é o canal do protocolo MCP no modo stdio — logs vão pro stderr.
+// stdout is the MCP protocol channel in stdio mode — logs go to stderr.
 const log = (...a) => process.stderr.write(a.join(' ') + '\n');
 
 const server = new McpServer({ name: 'canva-killer', version: '0.1.0' });
 
 server.tool(
   'list_brands',
-  'Lista as marcas disponíveis (id + nome). Cada marca define paleta, fontes e logo usados no render.',
+  'Lists the available brands (id + name). Each brand defines the palette, fonts, and logo used when rendering.',
   {},
   async () => {
     const brands = listBrands().map((id) => {
@@ -28,7 +28,7 @@ server.tool(
 
 server.tool(
   'list_templates',
-  'Lista os templates de layout disponíveis (ex.: "post-square" = 1080x1080). O template define os campos preenchíveis.',
+  'Lists the available layout templates (e.g. "post-square" = 1080x1080). The template defines the fillable fields.',
   {},
   async () => {
     return { content: [{ type: 'text', text: JSON.stringify(listTemplates(), null, 2) }] };
@@ -37,12 +37,12 @@ server.tool(
 
 server.tool(
   'render',
-  'Gera uma arte PNG preenchendo um template com os tokens de uma marca + o conteúdo do post. Retorna o caminho do PNG. Os campos de texto (titulo, kicker, cta...) aceitam HTML inline, ex.: <span class="hl">palavra</span> pra destacar na cor de acento.',
+  'Generates a PNG art piece by filling a template with a brand\'s tokens + the post content. Returns the PNG path. Text fields (titulo, kicker, cta...) accept inline HTML, e.g. <span class="hl">word</span> to highlight in the accent color.',
   {
-    brandId: z.string().describe('id da marca (veja list_brands)'),
-    templateId: z.string().describe('id do template (veja list_templates); padrão: post-square').optional(),
-    data: z.record(z.string(), z.string()).describe('conteúdo do post por campo: titulo, kicker, cta, topright, etc. Valores são string (HTML inline permitido).').optional(),
-    out: z.string().describe('caminho absoluto de saída do PNG (opcional; padrão: out/<brand>-<template>.png)').optional(),
+    brandId: z.string().describe('brand id (see list_brands)'),
+    templateId: z.string().describe('template id (see list_templates); default: post-square').optional(),
+    data: z.record(z.string(), z.string()).describe('post content per field: titulo, kicker, cta, topright, etc. Values are strings (inline HTML allowed).').optional(),
+    out: z.string().describe('absolute output path for the PNG (optional; default: out/<brand>-<template>.png)').optional(),
   },
   async ({ brandId, templateId, data, out }) => {
     try {
@@ -56,13 +56,13 @@ server.tool(
 
 server.tool(
   'render_carousel',
-  'Gera um carrossel inteiro (N slides) numa só chamada, reusando um único browser. Numera {{slide}}/{{slidetotal}} automaticamente quando o slide não traz esses campos. Retorna a lista de caminhos dos PNGs, na ordem.',
+  'Generates an entire carousel (N slides) in a single call, reusing one browser. Numbers {{slide}}/{{slidetotal}} automatically when the slide doesn\'t provide them. Returns the list of PNG paths, in order.',
   {
-    brandId: z.string().describe('id da marca (veja list_brands)'),
-    templateId: z.string().describe('template do slide; padrão: carrossel-slide').optional(),
-    slides: z.array(z.record(z.string(), z.string())).describe('um objeto de conteúdo por slide (titulo, kicker, corpo, cta...). slide/slidetotal são preenchidos automaticamente se ausentes.'),
-    outDir: z.string().describe('pasta de saída (opcional; padrão: out/)').optional(),
-    prefix: z.string().describe('prefixo dos arquivos (opcional; padrão: <brand>-carrossel)').optional(),
+    brandId: z.string().describe('brand id (see list_brands)'),
+    templateId: z.string().describe('slide template; default: carrossel-slide').optional(),
+    slides: z.array(z.record(z.string(), z.string())).describe('one content object per slide (titulo, kicker, corpo, cta...). slide/slidetotal are filled in automatically if absent.'),
+    outDir: z.string().describe('output folder (optional; default: out/)').optional(),
+    prefix: z.string().describe('file prefix (optional; default: <brand>-carrossel)').optional(),
   },
   async ({ brandId, templateId, slides, outDir, prefix }) => {
     try {
@@ -76,4 +76,4 @@ server.tool(
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-log('canva-killer MCP server rodando (stdio) — tools: list_brands, list_templates, render, render_carousel');
+log('canva-killer MCP server running (stdio) — tools: list_brands, list_templates, render, render_carousel');
