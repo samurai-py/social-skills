@@ -199,7 +199,7 @@ usually outsourced to an agency.
 </p>
 
 <p align="center">
-  Built with support from <a href="https://waifu.samvrai.tech"><strong>wAIfu Corp</strong></a>.
+  Built with support from <a href="https://waifucorp.org/"><strong>wAIfu Corp</strong></a>.
 </p>
 
 ## License
