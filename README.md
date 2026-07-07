@@ -39,7 +39,7 @@ The mascot is a chameleon for a reason: SocialSkills has no fixed visual identit
 working for you. It takes on your brand's colors, fonts and voice.
 
 > [!WARNING]
-> This is built for **agentic, vision-capable models** — the agent must be able to call tools/skills on its own *and* read images directly (reference posts, logos, screenshots). A text-only model, or one that can't reliably invoke MCP tools/skills, will not work well here: brand identity extraction, font matching, and layout recovery all depend on the model actually looking at the image you give it, not guessing from a text description of it. Tested against Claude (Sonnet/Opus family); other agentic + vision models should work but aren't verified.
+> This is built for **agentic, vision-capable models** — the agent must be able to call tools/skills on its own *and* read images directly (reference posts, logos, screenshots). A text-only model, or one that can't reliably invoke MCP tools/skills, will not work well here: brand identity extraction, font matching, and layout recovery all depend on the model actually looking at the image you give it, not guessing from a text description of it. Tested against Claude (Sonnet/Opus family) and Gemini; other agentic + vision models should work but aren't verified.
 
 ## Why it exists
 
