@@ -1,62 +1,95 @@
 ---
 name: brand-voice
-argument-hint: "[optional: path to save the profile, default: ./brand-profile.json]"
+argument-hint: "[optional: brand-id, default: generic]"
 description: >
-  Use to create or update the brand voice profile.
+  Use to create or update a brand's global editorial voice profile.
   Triggers: "brand interview", "define brand voice", "create brand profile",
   "brand voice", "how does the brand write", "brand tone".
-  Should run before content-writer.
+  Should run before writing content for a specific brand or channel.
 ---
 
-# Brand Voice — Brand Interview
+# Brand Voice — Unified Brand Interview
 
-Run a structured interview with the user to capture the brand's identity and voice. At the end,
-save the profile to `brand-profile.json` at the project root.
+Run a structured interview with the user to capture the brand's identity, editorial pillars, stances, and values. The profile will be saved inside the target brand's directory.
+
+---
 
 ## Instructions
 
-1. **Tell the user** you're going to ask 7 short questions. The answers will be used across all
-   generated content.
+1. **Identify the Brand and Industry**:
+   - Ask the user which brand they are profiling (e.g., `katana`, `4gentes`, or a new generic brand).
+   - Ask which industry or vertical it belongs to (e.g., **Fashion/Lifestyle**, **B2B SaaS/Tech**, **Science/Education**, or **Generic**).
 
-2. **Ask the questions one at a time**, waiting for the answer before moving on:
+2. **Tailor the Questions**:
+   Ask the following 7 questions one by one, adapting them to the identified industry:
 
-   1. What's the brand's name and what does it sell/offer in one sentence?
-   2. Who's the ideal customer? (age, role, main pain point, what they want to achieve)
-   3. What are the 3 adjectives that best describe the brand's tone? (e.g. direct, empathetic, bold)
-   4. What would the brand **never** say or do? (tone, words, approaches to avoid)
-   5. Name a brand or content creator whose writing style you admire. Why?
-   6. What's the biggest myth or objection your customers have before buying?
-   7. What's the transformation the customer experiences after using your product/service?
+   ### 🅰️ B2B SaaS / Tech
+   1. Brand name and what it solves in one sentence?
+   2. Who is the ideal customer (role, industry, main pain point)?
+   3. 3 adjectives that describe the brand's tone (e.g., authoritative, clear, tech-savvy)?
+   4. Stances/opinions: What does the brand advocate for (e.g., open source, automation) and what does it object to?
+   5. Style reference: A tech brand/creator you admire and why?
+   6. What is the biggest technical objection customers have?
+   7. Customer transformation: How does their work change after adoption?
 
-3. **After all answers**, synthesize a profile in the JSON format below and save it to
-   `brand-profile.json`:
+   ### 🅱️ Fashion / Lifestyle
+   1. Brand name and price range/style category (e.g., streetwear, luxury)?
+   2. Sub-brands: Is there a sub-brand? If so, what is its separate aesthetic/audience?
+   3. Who is the ideal customer and what do they want to express by wearing the brand?
+   4. 3 adjectives that define the brand's attitude (e.g., minimal, bold, irreverent)?
+   5. Visual mood: References for photography, lookbooks, or cultural moodboards?
+   6. Style reference: Brands or style icons you admire?
+   7. Customer feeling: What transformation or sensory feeling do they get wearing it?
 
-```json
-{
-  "brand_name": "",
-  "offer": "",
-  "ideal_customer": {
-    "profile": "",
-    "main_pain": "",
-    "desired_outcome": ""
-  },
-  "tone_adjectives": [],
-  "avoid": [],
-  "style_reference": "",
-  "main_objection": "",
-  "transformation": "",
-  "voice_summary": "A 3-4 sentence paragraph describing how the brand writes, for whom, and with what intent."
-}
-```
+   ### 🅲 Science / Education
+   1. Brand name and educational/research focus in one sentence?
+   2. Who is the target reader (students, peers, general public, investors)?
+   3. 3 adjectives describing the educational tone (e.g., didactic, precise, intellectually curious)?
+   4. Stances/opinions: What scientific/editorial lines or arguments does it advocate?
+   5. Style reference: A scientific communicator or publication you admire?
+   6. What is the main myth/misconception in this field?
+   7. Reader transformation: What knowledge or clarity do they gain?
 
-4. **Show the generated profile** to the user and ask if they want to adjust anything before
-   saving.
+   ### 🅳 Generic / Other
+   1. Brand name and core offer in one sentence?
+   2. Who is the ideal customer?
+   3. 3 adjectives for the tone?
+   4. What would the brand **never** say or do?
+   5. Style references admired?
+   6. Main customer objection or doubt?
+   7. Customer transformation?
 
-5. **Save the file** and confirm: `brand-profile.json saved. Use /marketing-tools:content-writer to create content in the brand voice.`
+3. **Synthesize the Profile**:
+   Assemble the answers into a unified JSON schema:
 
-## Notes
+   ```json
+   {
+     "brand_name": "",
+     "industry": "",
+     "offer": "",
+     "sub_brands": [],
+     "ideal_customer": {
+       "profile": "",
+       "pain_points": [],
+       "aspirations": []
+     },
+     "tone_adjectives": [],
+     "editorial_pillars": {
+       "advocates_for": [],
+       "opposes": [],
+       "stances": []
+     },
+     "avoid": [],
+     "style_reference": "",
+     "main_objections": [],
+     "transformation": "",
+     "voice_summary": "A 3-4 sentence paragraph describing the brand's core values, arguments, and style guidelines. Write it as a briefing for a copywriter."
+   }
+   ```
 
-- If `brand-profile.json` already exists, ask whether to update or replace it.
-- Don't make up information — use exactly what the user answered.
-- The `voice_summary` should read like an instruction for a human copywriter, not a technical
-  description.
+4. **Review & Save**:
+   - Show the profile to the user for feedback.
+   - Determine the save path:
+     - If a brand-id was provided (e.g., `katana`): `user/plugins/<brand-id>/voice-profile.json` (create the directory if it does not exist).
+     - Otherwise, fallback to: `brand-profile.json` at the project root.
+   - Save the file and print a confirmation message showing the save location.

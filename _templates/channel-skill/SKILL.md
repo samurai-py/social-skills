@@ -22,9 +22,9 @@ Paths are relative to this skill's folder.
 ### 1. Understand the request
 Get the **topic** and **goal**. If missing, ask.
 
-### 2. Load the style
-- Read `reference/style-guide.md`. If it's "_(to be defined)_", run "Learn the style" below.
-- Read the samples in `samples/*.md` / `*.txt`.
+### 2. Load the Brand Voice Profile & Stylistic Guide (Two-Tiered Data Flow)
+- **Layer 1: Editorial Pillars & Arguments** (What to say): Read `voice-profile.json` (located in the parent brand directory `user/plugins/<brand-id>/voice-profile.json` or root fallback). Internalize the brand's stances, target reader pain points, values, and core theses.
+- **Layer 2: Style & Platform Tone** (How to say it): Read `reference/style-guide.md` (local to this channel folder) and the samples in `samples/*.md` / `*.txt` to adopt the specific author slang, vocabulary, and formatting rhythm. If `style-guide.md` is empty, run the "Learning the style" flow below.
 
 ### 3. Write in CHANNEL's native format
 <!-- Adjust these rules for the real channel. Examples:
