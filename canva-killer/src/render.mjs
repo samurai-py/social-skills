@@ -121,15 +121,39 @@ export function resolveIcon(name) {
   return fs.readFileSync(file, 'utf8').replace(/\s(?:width|height)="[^"]*"/g, '');
 }
 
+const SYSTEM_FONTS = new Set([
+  'system-ui', 'sans-serif', 'serif', 'monospace', 'ui-monospace',
+  'cursive', 'fantasy', 'inherit', 'initial', 'unset'
+]);
+
+function cleanFontName(fontFamily) {
+  if (!fontFamily) return '';
+  const m = fontFamily.match(/['"]([^'"]+)['"]/);
+  const name = m ? m[1] : fontFamily.split(',')[0].trim();
+  return SYSTEM_FONTS.has(name.toLowerCase()) ? '' : name;
+}
+
 // Fills {{token}} in the HTML from: palette + fonts + brand metadata + the post's `data`.
 // `data` wins over the brand (allows per-post override). Content fields accept inline HTML
 // (e.g. <span class="hl">word</span>) — the template's author controls the surface.
 export function fillTemplate(html, brand, data = {}) {
+  let googleFonts = brand.fonts.googleFonts;
+  if (!googleFonts && (brand.fonts.display || brand.fonts.mono)) {
+    const displayFamily = cleanFontName(brand.fonts.display);
+    const monoFamily = cleanFontName(brand.fonts.mono);
+    const families = [];
+    if (displayFamily) families.push(`family=${encodeURIComponent(displayFamily)}:wght@400;500;600;700`);
+    if (monoFamily) families.push(`family=${encodeURIComponent(monoFamily)}:wght@400;500;600;700`);
+    if (families.length > 0) {
+      googleFonts = `https://fonts.googleapis.com/css2?${families.join('&')}&display=swap`;
+    }
+  }
+
   const tokens = {
     ...brand.palette,
     display: brand.fonts.display,
     mono: brand.fonts.mono,
-    googleFonts: brand.fonts.googleFonts,
+    googleFonts: googleFonts || '',
     logoText: brand.logoText,
     handle: brand.handle,
     name: brand.name,

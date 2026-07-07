@@ -12,7 +12,6 @@
   },
   "fonts": {
     "display": "'Space Grotesk', system-ui, sans-serif",
-    "mono": "'JetBrains Mono', ui-monospace, monospace",
-    "googleFonts": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    "mono": "'JetBrains Mono', ui-monospace, monospace"
   }
 }
