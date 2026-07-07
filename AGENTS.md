@@ -73,10 +73,16 @@ instead of Canva's Enterprise-only autofill. Has a local **Studio** (`npm run st
 `canva-killer/studio/`) with three tabs:
 
 > [!NOTE]
-> When asked to match a brand's visual identity, generate custom vector shapes, configure fonts, or replicate layouts, the AI agent must read and follow the instructions in the custom skills:
+> When asked to generate a social post, learn a brand's visual identity from images, generate custom vector shapes, configure fonts, or replicate layouts, the AI agent must start at
+> [`canva-killer/skills/canva-killer-guide/SKILL.md`](canva-killer/skills/canva-killer-guide/SKILL.md) — the entry point explaining the whole system, the iterate-until-good discipline, and which sub-skill to use when:
+> - **brand-identity**: [`canva-killer/skills/brand-identity/SKILL.md`](canva-killer/skills/brand-identity/SKILL.md) — entry point for a *new* brand: learns palette, fonts, logo, and pattern from reference images and writes `user/canva-killer/brands/<id>.json`. Delegates fonts to font-builder and marks/icons to svg-builder.
 > - **svg-builder**: [`canva-killer/skills/svg-builder/SKILL.md`](canva-killer/skills/svg-builder/SKILL.md) — rules for generating line icons, responsive math curves (DNA helixes), and molecular node grids.
 > - **font-builder**: [`canva-killer/skills/font-builder/SKILL.md`](canva-killer/skills/font-builder/SKILL.md) — routine for identifying fonts visually via OCR, matching them to Google Fonts, and zero-config setup.
-> - **layout-recovery**: [`canva-killer/skills/layout-recovery/SKILL.md`](canva-killer/skills/layout-recovery/SKILL.md) — steps to reverse-engineer and visually QA a template based on a reference image.
+> - **layout-recovery**: [`canva-killer/skills/layout-recovery/SKILL.md`](canva-killer/skills/layout-recovery/SKILL.md) — steps to reverse-engineer and visually QA a *template* (layout/composition, not brand identity) based on a reference image.
+>
+> Templates are brand-scoped (`user/canva-killer/templates/<brandId>/`) — never author a
+> brand-specific template flat into `user/canva-killer/templates/` without the brand subfolder,
+> or every other brand will see it too.
 
 - **Compose** — semantic layer. Picks a ready template, generates a form from its
   `{{tokens}}`, fills content only. This is what an AI agent drives to turn data into a PNG.
