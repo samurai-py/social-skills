@@ -57,6 +57,14 @@ channels. Registered in the root `.claude-plugin/marketplace.json` (`source:
 "./user/plugins/<brand>"`). Brand plugins are **never committed** — they're example entries in
 `user/`, gitignored.
 
+### Copywriting Voice Hierarchy (Substance vs. Style)
+
+To avoid redundancies, the AI copywriting workflow splits the brand's voice into two clean layers:
+1. **Brand Voice Profile** (`user/plugins/<brand>/voice-profile.json`): The **editorial substance** (What to say). Stores arguments, theses, content pillars, stances, taboos, and target customer profiles. Generated/updated via `/marketing-tools:brand-voice`.
+2. **Channel Style Guide** (`user/plugins/<brand>/<channel>/reference/style-guide.md`): The **stylistic execution** (How to say it). Stores platform format limits, hooks, specific slang, author rhythm, and structural guidelines (e.g. blog post structure vs. TikTok scripts).
+
+When writing posts, the agent reads the local channel guides and samples to adopt the stylistic tone, while drawing core technical arguments and editorial direction from the brand's `voice-profile.json` (or root `brand-profile.json` fallback).
+
 ## canva-killer
 
 See the [canva-killer README](canva-killer/README.md) for the full guide. In short: templates
@@ -65,9 +73,10 @@ instead of Canva's Enterprise-only autofill. Has a local **Studio** (`npm run st
 `canva-killer/studio/`) with three tabs:
 
 > [!NOTE]
-> When asked to match a brand's visual identity, generate custom vector shapes, or configure fonts, the AI agent must read and follow the instructions in the custom skills:
+> When asked to match a brand's visual identity, generate custom vector shapes, configure fonts, or replicate layouts, the AI agent must read and follow the instructions in the custom skills:
 > - **svg-builder**: [`canva-killer/skills/svg-builder/SKILL.md`](canva-killer/skills/svg-builder/SKILL.md) — rules for generating line icons, responsive math curves (DNA helixes), and molecular node grids.
 > - **font-builder**: [`canva-killer/skills/font-builder/SKILL.md`](canva-killer/skills/font-builder/SKILL.md) — routine for identifying fonts visually via OCR, matching them to Google Fonts, and zero-config setup.
+> - **layout-recovery**: [`canva-killer/skills/layout-recovery/SKILL.md`](canva-killer/skills/layout-recovery/SKILL.md) — steps to reverse-engineer and visually QA a template based on a reference image.
 
 - **Compose** — semantic layer. Picks a ready template, generates a form from its
   `{{tokens}}`, fills content only. This is what an AI agent drives to turn data into a PNG.

@@ -28,7 +28,7 @@ LLMs trained on web data recommend products based on:
 1. **Request the current listing** if it wasn't provided — ask for title, description, bullet
    points, and technical specs.
 
-2. **If `brand-profile.json` exists**, read it and apply the brand voice to the rewrite.
+2. **If a voice profile exists** (either `user/plugins/<brand-id>/voice-profile.json` or `brand-profile.json` at the root), read it and apply the brand voice to the rewrite.
 
 3. **Analyze the current listing** and identify:
    - Implicit attributes that should be explicit
