@@ -41,12 +41,19 @@ user**. The flow below is the script the agent follows.
 ## Creating a BRAND in canva-killer (palette/fonts/logo for the art)
 
 1. Copy `canva-killer/brands/_TEMPLATE.json` → `user/canva-killer/brands/<id>.json` and fill it
-   in (see `canva-killer/brands/README.md`). A real brand is user data — it lives in the `user/`
-   overlay.
-2. Need a new layout? Copy `canva-killer/templates/_TEMPLATE.html` →
-   `user/canva-killer/templates/<id>.html` (keep a `#canvas` at the target size). Only goes into
-   `canva-killer/templates/` (the framework) if it's a generic base layout reusable by any
-   brand — not something authored for one specific brand.
+   in (see `canva-killer/brands/README.md`), or run the `brand-identity` skill against reference
+   images of the brand to fill it in automatically (palette, fonts, logo, pattern). A real brand
+   is user data — it lives in the `user/` overlay.
+2. Need a new layout? Templates are **brand-scoped**, same overlay pattern as brands/icons:
+   - **Generic** (reusable by any brand): copy `canva-killer/templates/_TEMPLATE.html` →
+     `canva-killer/templates/<id>.html` — only for a genuinely brand-agnostic base layout.
+   - **Exclusive to one brand** (the common case — most templates are authored to match one
+     brand's identity): copy it to `user/canva-killer/templates/<brandId>/<id>.html` instead
+     (keep a `#canvas` at the target size). `<brandId>` MUST match the brand's `id` field
+     exactly — that folder is the isolation boundary: a brand only ever sees generic layouts
+     plus its own folder, never another brand's. **Never** drop a brand-specific template flat
+     into `user/canva-killer/templates/` (no subfolder) — that's the one mistake that leaks it
+     to every other brand.
 3. Generate art via the CLI (`node src/render.mjs --brand <id> --template <id> --data
    <file.json>`) or via the `render` MCP tool. Rendering resolves brand/template/custom-icon by
    **overlay**: it looks in `user/canva-killer/` first, then falls back to the framework.

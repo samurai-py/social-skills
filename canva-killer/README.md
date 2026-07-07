@@ -19,11 +19,18 @@ brand templates, filled in per post" use case, that's a trade worth making.
 
 ```
 brands/         # 1 JSON per brand: palette, fonts, logo, handle
-templates/      # 1 HTML/CSS/SVG per layout — uses brand + content {{tokens}}
+templates/      # generic layouts (HTML/CSS/SVG) — brand-agnostic, shared by every brand
 content/        # sample post data (JSON)
 src/render.mjs  # core: brand + template + data -> PNG (headless Chromium via Playwright)
 out/            # generated PNGs (gitignored)
 ```
+
+Templates are **brand-scoped**, the same overlay pattern as brands/icons: a brand always sees the
+framework's generic layouts here in `templates/` (`post-square`, `story`, `blog-cover`,
+`carrossel-slide`), plus any layout authored exclusively for it in
+`user/canva-killer/templates/<brandId>/`. A brand never sees another brand's exclusive templates —
+`listTemplates()`/`resolveTemplatePath()` in `src/render.mjs` always take a `brandId` and resolve
+within that scope only.
 
 Templates use `{{token}}` placeholders. Tokens come from the brand (`{{bg}}`, `{{accent}}`,
 `{{display}}`, `{{logoText}}`…) and from the post content (`{{titulo}}`, `{{kicker}}`,
@@ -60,7 +67,8 @@ A minimal local server that reuses `render.mjs`. Three tabs:
   existing templates** (block model is embedded in the saved HTML). Background patterns render
   live on the canvas. Searchable **icon browser** (~1500 Lucide icons). Keyboard control: arrows
   move the selected block (Shift = 1px), `[`/`]` reorder the stack, Del deletes, Ctrl+D
-  duplicates, Esc deselects. Exports `.html` to `templates/`.
+  duplicates, Esc deselects. Exports `.html` to `user/canva-killer/templates/<active brand>/` —
+  exclusive to whichever brand is selected when you save.
 - **Brand**: palette/fonts editor + **logo upload** + live preview; saves `brands/<id>.json`.
 
 **Autosave**: studio state is saved to `localStorage` every 60s (and restored on open).
@@ -105,8 +113,11 @@ Create `brands/<id>.json`:
 
 ## Adding a template
 
-Create `templates/<id>.html` with a `#canvas` element at the target size and `{{token}}`
-placeholders. See `templates/post-square.html` as a reference.
+- **Generic layout** (reusable by any brand): create `templates/<id>.html` here in the framework,
+  with a `#canvas` element at the target size and `{{token}}` placeholders. See
+  `templates/post-square.html` as a reference.
+- **Brand-exclusive layout**: create `user/canva-killer/templates/<brandId>/<id>.html` instead —
+  only that brand will ever see or render it (see [`_templates/README.md`](../_templates/README.md#creating-a-brand-in-canva-killer-palettefontslogo-for-the-art)).
 
 ## Roadmap
 
@@ -119,6 +130,9 @@ placeholders. See `templates/post-square.html` as a reference.
 - [x] Icons — `{{icon:shield}}` (Lucide library, ~1500) + `{{icon:custom/name}}` (generated SVGs); inherit color via `currentColor`
 - [x] `svg-builder` skill — generates a custom icon/SVG element from a description → `assets/custom/`
 - [x] `font-builder` skill — identifies visual fonts via OCR, matches to Google Fonts, and auto-resolves stylesheets
+- [x] `brand-identity` skill — learns a brand's full visual identity (palette, fonts, logo, pattern) from reference images, writes `brands/<id>.json`
+- [x] `layout-recovery` skill — reverse-engineers an existing design into a template, with closed-loop visual QA
+- [x] Per-brand template isolation — a brand only ever sees generic layouts + its own exclusive templates, never another brand's
 - [x] Shared `base.css` (`partials/base.css`, injected via `{{baseStyles}}`) — reset, background layers, helpers
 - [x] Procedural patterns — `data.pattern`: `grid` (default) · `dots` · `scanlines` · `mesh` · `hatch` · `noise` · `none`
 - [x] Studio mode (`studio/`, `npm run studio` → http://localhost:4173) — **Compose** (auto form from tokens + live preview + PNG export) and **Create template** (magnetic snap-to-grid blocks → exports `.html`)

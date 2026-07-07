@@ -28,10 +28,12 @@ server.tool(
 
 server.tool(
   'list_templates',
-  'Lists the available layout templates (e.g. "post-square" = 1080x1080). The template defines the fillable fields.',
-  {},
-  async () => {
-    return { content: [{ type: 'text', text: JSON.stringify(listTemplates(), null, 2) }] };
+  'Lists layout templates available to a brand: the framework\'s generic layouts (post-square, story, blog-cover, carrossel-slide) plus any templates authored exclusively for that brand. Templates are brand-scoped — a brand never sees another brand\'s exclusive templates.',
+  {
+    brandId: z.string().describe('brand id (see list_brands)'),
+  },
+  async ({ brandId }) => {
+    return { content: [{ type: 'text', text: JSON.stringify(listTemplates(brandId), null, 2) }] };
   }
 );
 

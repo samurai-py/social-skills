@@ -139,12 +139,16 @@ That means one checkout can be both:
 Suggested private layout:
 
 ```text
-user/plugins/<brand>/           # real brand plugins and channel skills
-user/canva-killer/brands/       # brand palette, fonts, logo, handle
-user/canva-killer/assets/       # authored SVGs, logos, custom icons
-user/canva-killer/templates/    # brand-specific templates
-user/canva-killer/out/          # exported PNGs
+user/plugins/<brand>/                    # real brand plugins and channel skills
+user/canva-killer/brands/                # brand palette, fonts, logo, handle
+user/canva-killer/assets/custom/         # generic authored SVGs/icons shared by every brand
+user/canva-killer/assets/custom/<brand>/ # SVGs/logo exclusive to one brand
+user/canva-killer/templates/<brand>/     # templates exclusive to one brand
+user/canva-killer/out/                   # exported PNGs
 ```
+
+Templates and custom assets/icons are **brand-scoped**: a brand only ever sees the framework's
+generic layouts/icons plus its own `<brand>/` subfolder — never another brand's exclusive work.
 
 To create a brand or channel, start with [_templates/README.md](_templates/README.md).
 

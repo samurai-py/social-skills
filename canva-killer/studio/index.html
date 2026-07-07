@@ -763,8 +763,7 @@
                                 (p) => `<option>${p}</option>`,
                             ).join("")),
                     );
-                st.templates = await (await fetch("/api/templates")).json();
-                setBrand(st.brands[0].id);
+                await setBrand(st.brands[0].id);
                 $("#tpl").onchange = loadTemplate;
                 $("#pattern").onchange = previewCompose;
                 $("#patternOpacity").oninput = debounce(previewCompose, 80);
@@ -796,12 +795,10 @@
                 setInterval(persist, 60000);
             }
             function updateTemplatesList() {
-                if (!st.templates || !st.brands) return;
-                const brandId = st.brand.id;
-                const otherBrands = st.brands.map((b) => b.id).filter((id) => id !== brandId);
-                const filtered = st.templates.filter((t) => {
-                    return !otherBrands.some((otherId) => t.startsWith(otherId + "-"));
-                });
+                if (!st.templates) return;
+                // server already scopes st.templates to the active brand (generic layouts +
+                // that brand's own exclusive templates) — no client-side filtering needed.
+                const filtered = st.templates;
                 const currentTpl = $("#tpl").value;
                 $("#tpl").innerHTML = filtered
                     .map((t) => `<option>${t}</option>`)
@@ -821,10 +818,11 @@
                     $("#openTpl").value = "";
                 }
             }
-            function setBrand(id) {
+            async function setBrand(id) {
                 st.brand = st.brands.find((b) => b.id === id);
                 loadFonts(st.brand);
                 const prevTpl = st.tpl;
+                st.templates = await (await fetch("/api/templates?brand=" + encodeURIComponent(id))).json();
                 updateTemplatesList();
                 // identity: the UI takes on the loaded brand's accent color (mark, tabs, buttons, mascot)
                 document.documentElement.style.setProperty(
@@ -938,7 +936,8 @@
                 st.tpl = $("#tpl").value;
                 st.tplRaw = await (
                     await fetch(
-                        "/api/template?id=" + encodeURIComponent(st.tpl),
+                        "/api/template?id=" + encodeURIComponent(st.tpl) +
+                        "&brand=" + encodeURIComponent(st.brand.id),
                     )
                 ).text();
                 const dm = st.tplRaw.match(
@@ -1242,13 +1241,17 @@
             }
             const _iconCache = {};
             async function iconSvg(name) {
-                if (_iconCache[name]) return _iconCache[name];
+                // cache key includes the brand: the same "custom/xxx" name can resolve to a
+                // different SVG per brand now that custom icons/logos are brand-scoped.
+                const key = st.brand.id + ":" + name;
+                if (_iconCache[key]) return _iconCache[key];
                 const svg = await (
                     await fetch(
-                        "/api/icon-svg?name=" + encodeURIComponent(name),
+                        "/api/icon-svg?name=" + encodeURIComponent(name) +
+                        "&brand=" + encodeURIComponent(st.brand.id),
                     )
                 ).text();
-                _iconCache[name] = svg;
+                _iconCache[key] = svg;
                 return svg;
             }
             function startDrag(e) {
@@ -1722,6 +1725,7 @@
                             dims: st.dims,
                             blocks: st.blocks,
                             meta,
+                            brandId: st.brand.id,
                         }),
                     })
                 ).json();
@@ -1729,7 +1733,8 @@
                     ? `Saved: ${r.id}.html ✓`
                     : "Error: " + r.error;
                 if (r.ok) {
-                    const tpls = await (await fetch("/api/templates")).json();
+                    const tpls = await (await fetch("/api/templates?brand=" + encodeURIComponent(st.brand.id))).json();
+                    st.templates = tpls;
                     $("#tpl").innerHTML = tpls
                         .map((t) => `<option>${t}</option>`)
                         .join("");
@@ -1754,7 +1759,8 @@
                     return;
                 }
                 const r = await (
-                    await fetch("/api/blocks?id=" + encodeURIComponent(id))
+                    await fetch("/api/blocks?id=" + encodeURIComponent(id) +
+                        "&brand=" + encodeURIComponent(st.brand.id))
                 ).json();
                 if (!r.editable) {
                     $("#msgA").textContent =
@@ -1866,13 +1872,14 @@
                             body: JSON.stringify({
                                 name: $("#logoName").value,
                                 svg,
+                                brandId: b.id,
                             }),
                         })
                     ).json();
                     if (r.ok) {
                         b.logo = r.ref;
                         $("#msgB").textContent = "Logo saved: " + r.ref;
-                        delete _iconCache[r.ref];
+                        delete _iconCache[b.id + ":" + r.ref];
                         brandLockupLogo();
                         renderBlocks();
                     }
