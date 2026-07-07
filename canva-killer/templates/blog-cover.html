@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
 <link href="{{googleFonts}}" rel="stylesheet">
-<script type="application/json" data-ck-model>{"dims":[1200,630],"blocks":[{"id":1,"type":"rect","x":36,"y":32,"w":1128,"h":56,"color":"surface","radius":12,"rot":0},{"id":2,"type":"logo","x":60,"y":44,"size":26,"color":"text","rot":0},{"id":3,"type":"texto","x":1030,"y":48,"token":"data","text":"","font":"mono","size":20,"color":"muted","weight":400,"ls":0,"rot":0},{"id":4,"type":"window","x":36,"y":104,"w":1128,"h":494,"title":"~/4gentes — blog","bar":44,"radius":12,"src":"","fit":"cover","effect":"none","rot":0},{"id":5,"type":"kicker","x":74,"y":210,"token":"kicker","text":"KICKER","font":"mono","size":22,"color":"accent","ls":4,"upper":true,"weight":400,"rot":0},{"id":6,"type":"texto","x":74,"y":258,"token":"titulo","text":"","font":"disp","size":58,"weight":700,"color":"text","ls":-1.5,"rot":0,"w":1000},{"id":7,"type":"texto","x":74,"y":522,"token":"cta","text":"","font":"mono","size":20,"color":"accent","weight":600,"ls":0,"rot":0},{"id":8,"type":"texto","x":1000,"y":522,"token":"handle","text":"","font":"mono","size":20,"color":"muted","weight":400,"ls":0,"rot":0}],"meta":{"size":"1200x630","pattern":"grid"}}</script>
+<script type="application/json" data-ck-model>{"dims":[1200,630],"blocks":[{"id":1,"type":"rect","x":36,"y":32,"w":1128,"h":56,"color":"surface","radius":12,"rot":0},{"id":2,"type":"logo","x":60,"y":44,"size":26,"color":"text","rot":0},{"id":3,"type":"texto","x":1030,"y":48,"token":"data","text":"","font":"mono","size":20,"color":"muted","weight":400,"ls":0,"rot":0},{"id":4,"type":"window","x":36,"y":104,"w":1128,"h":494,"title":"~/{{logoText}} — blog","bar":44,"radius":12,"src":"","fit":"cover","effect":"none","rot":0},{"id":5,"type":"kicker","x":74,"y":210,"token":"kicker","text":"KICKER","font":"mono","size":22,"color":"accent","ls":4,"upper":true,"weight":400,"rot":0},{"id":6,"type":"texto","x":74,"y":258,"token":"titulo","text":"","font":"disp","size":58,"weight":700,"color":"text","ls":-1.5,"rot":0,"w":1000},{"id":7,"type":"texto","x":74,"y":522,"token":"cta","text":"","font":"mono","size":20,"color":"accent","weight":600,"ls":0,"rot":0},{"id":8,"type":"texto","x":1000,"y":522,"token":"handle","text":"","font":"mono","size":20,"color":"muted","weight":400,"ls":0,"rot":0}],"meta":{"size":"1200x630","pattern":"grid"}}</script>
 <style>
   {{baseStyles}}
   #canvas{width:1200px;height:630px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};}
@@ -17,7 +17,7 @@
     <div style="position:absolute;left:36px;top:104px;width:1128px;height:494px;border:1px solid {{surface}};border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:{{bg}}">
       <div style="height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;background:{{surface}};font-family:{{mono}};font-size:17px;color:{{muted}}">
         <span style="width:12px;height:12px;border-radius:50%;background:{{accent}}"></span>
-        <span style="flex:1">~/4gentes — blog</span><span style="letter-spacing:3px">_ □ ✕</span>
+        <span style="flex:1">~/{{logoText}} — blog</span><span style="letter-spacing:3px">_ □ ✕</span>
       </div><div style="flex:1"></div>
     </div>
     <div style="position:absolute;left:74px;top:210px;font-family:{{mono}};font-size:22px;font-weight:400;color:{{accent}};letter-spacing:4px;line-height:1.05;text-transform:uppercase;">{{kicker}}</div>

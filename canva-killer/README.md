@@ -36,7 +36,7 @@ Templates use `{{token}}` placeholders. Tokens come from the brand (`{{bg}}`, `{
 ```bash
 npm install                       # installs playwright-core (uses the system Chrome, no browser download)
 node src/render.mjs \
-  --brand 4gentes \
+  --brand mybrand \
   --template post-square \
   --data content/pirataria.json \
   # --out out/my-art.png          (optional)
@@ -80,7 +80,7 @@ overlay that darkens the image to keep text legible. Without `bgimage`, only the
 background + grid show.
 
 ```bash
-node src/render.mjs --brand 4gentes --template blog-cover --data content/post.json
+node src/render.mjs --brand mybrand --template blog-cover --data content/post.json
 # where content/post.json includes:  { "titulo": "...", "bgimage": "path/to/photo.jpg" }
 ```
 

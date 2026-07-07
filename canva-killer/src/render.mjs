@@ -226,7 +226,7 @@ export async function renderCarousel({ brandId, templateId = 'carrossel-slide', 
 function arg(name, def) { const i = process.argv.indexOf('--' + name); return i >= 0 ? process.argv[i + 1] : def; }
 const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isCli) {
-  const brandId = arg('brand', '4gentes');
+  const brandId = arg('brand', 'mybrand');
   const templateId = arg('template');
   const dataPath = arg('data');
   const out = arg('out');
