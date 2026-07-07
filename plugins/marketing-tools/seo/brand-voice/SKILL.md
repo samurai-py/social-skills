@@ -93,3 +93,9 @@ Run a structured interview with the user to capture the brand's identity, editor
      - If a brand-id was provided (e.g., `katana`): `user/plugins/<brand-id>/voice-profile.json` (create the directory if it does not exist).
      - Otherwise, fallback to: `brand-profile.json` at the project root.
    - Save the file and print a confirmation message showing the save location.
+
+5. **Logo Retrieval & Configuration**:
+   - Search the web for the brand's logo (preferably a vector SVG, or a transparent PNG).
+   - If found, clean/sanitize it and save it to `user/canva-killer/assets/custom/logo.svg`.
+   - Update the brand's JSON config `logo` property to reference this logo (e.g. `"logo": "custom/logo"`).
+   - If not found, prompt the user to upload the logo SVG through the Studio's logo upload tool, or configure `logoText` inside the brand config to display a clean uppercase text fallback.

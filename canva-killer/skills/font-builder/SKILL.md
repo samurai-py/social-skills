@@ -36,12 +36,13 @@ Query the following curated list of high-quality Google Fonts to find the closes
 | **Baskerville, Garamond** | `EB Garamond`, `Lora` | Academic, premium, editorial |
 | **Wide Tech Sans** | `Space Grotesk`, `Syne` | Brutalist, Web3, cyberpunk |
 
-### 3. Configure the Brand JSON
+### 3. Configure the Brand JSON & Logo
 Create or modify the brand config file at:
 `user/canva-killer/brands/<brand-id>.json`
 
 Define the display and mono fonts using CSS font-family strings with system fallbacks.
 - **Zero-Config Google Fonts Feature**: Do **NOT** manually populate the `googleFonts` key in the JSON file. The rendering engine will automatically parse the font names from `display` and `mono` (extracting names like `"Space Grotesk"` or `"JetBrains Mono"`), filter out system fallbacks (like `sans-serif` or `monospace`), and construct the API link dynamically.
+- **Logo Search & Configuration**: Search the web for a vector SVG or transparent PNG of the brand's logo. If found, clean/sanitize it and save it to `user/canva-killer/assets/custom/logo.svg` to reference it under the `"logo": "custom/logo"` key in the brand JSON. If not found, prompt the user to upload it via the Studio's logo upload tool, or configure `"logoText"` inside the brand config to display a clean uppercase text fallback.
 
 #### Example Config:
 ```json

@@ -681,6 +681,7 @@
             const st = {
                 brands: [],
                 brand: null,
+                templates: [],
                 tpl: null,
                 tplRaw: "",
                 dims: [1080, 1080],
@@ -762,14 +763,8 @@
                                 (p) => `<option>${p}</option>`,
                             ).join("")),
                     );
+                st.templates = await (await fetch("/api/templates")).json();
                 setBrand(st.brands[0].id);
-                const tpls = await (await fetch("/api/templates")).json();
-                $("#tpl").innerHTML = tpls
-                    .map((t) => `<option>${t}</option>`)
-                    .join("");
-                $("#openTpl").innerHTML =
-                    '<option value="">— new (blank) —</option>' +
-                    tpls.map((t) => `<option>${t}</option>`).join("");
                 $("#tpl").onchange = loadTemplate;
                 $("#pattern").onchange = previewCompose;
                 $("#patternOpacity").oninput = debounce(previewCompose, 80);
@@ -800,9 +795,36 @@
                 await loadTemplate();
                 setInterval(persist, 60000);
             }
+            function updateTemplatesList() {
+                if (!st.templates) return;
+                const brandId = st.brand.id;
+                const filtered = st.templates.filter((t) => {
+                    return t.startsWith(brandId + "-") || !t.includes("-") || t.startsWith("generic-");
+                });
+                const currentTpl = $("#tpl").value;
+                $("#tpl").innerHTML = filtered
+                    .map((t) => `<option>${t}</option>`)
+                    .join("") || '<option value="">— no templates —</option>';
+                if (filtered.includes(currentTpl)) {
+                    $("#tpl").value = currentTpl;
+                } else {
+                    st.tpl = filtered[0] || "";
+                }
+                const currentOpen = $("#openTpl").value;
+                $("#openTpl").innerHTML =
+                    '<option value="">— new (blank) —</option>' +
+                    filtered.map((t) => `<option>${t}</option>`).join("");
+                if (filtered.includes(currentOpen)) {
+                    $("#openTpl").value = currentOpen;
+                } else {
+                    $("#openTpl").value = "";
+                }
+            }
             function setBrand(id) {
                 st.brand = st.brands.find((b) => b.id === id);
                 loadFonts(st.brand);
+                const prevTpl = st.tpl;
+                updateTemplatesList();
                 // identity: the UI takes on the loaded brand's accent color (mark, tabs, buttons, mascot)
                 document.documentElement.style.setProperty(
                     "--accent",
@@ -815,8 +837,12 @@
                 brandLockupLogo();
                 applyVars();
                 buildBrandForm();
-                if (view() === "compose") previewCompose();
-                else if (view() === "author") renderPattern();
+                if (st.tpl !== prevTpl) {
+                    loadTemplate();
+                } else {
+                    if (view() === "compose") previewCompose();
+                    else if (view() === "author") renderPattern();
+                }
             }
             // lockup: the brand's real logo next to our mark (recolorable SVG; fallback = logoText/name)
             async function brandLockupLogo() {
