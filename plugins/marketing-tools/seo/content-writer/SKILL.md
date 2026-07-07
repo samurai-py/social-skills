@@ -16,13 +16,15 @@ Writes articles, landing pages, and product descriptions using the voice profile
 
 ## Prerequisites
 
-`brand-profile.json` must exist in the project. If it doesn't, say: "Run
-/marketing-tools:brand-voice first to create the brand profile."
+A brand voice profile must exist. Look for:
+1. `user/plugins/<brand-id>/voice-profile.json` (if a brand-id is targeted).
+2. `brand-profile.json` at the project root (default fallback).
+
+If neither exists, say: "Run /marketing-tools:brand-voice first to create the brand profile."
 
 ## Flow
 
-1. **Read `brand-profile.json`** — internalize the `voice_summary`, tone, ideal customer, and
-   transformation.
+1. **Read the voice profile** — internalize the `voice_summary`, tone, ideal customer, editorial pillars, and transformation.
 
 2. **Confirm the parameters** if they weren't passed:
    - Target keyword (required)
