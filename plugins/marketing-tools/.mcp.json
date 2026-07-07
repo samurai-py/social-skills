@@ -5,15 +5,15 @@
       "args": ["${STATIC_ADS_MCP_PATH}/server.js"]
     },
     "adsagent": {
-      "command": "npx",
-      "args": ["-y", "@adsagent/mcp-server"],
+      "command": "node",
+      "args": ["${ADSAGENT_MCP_PATH}/server.js"],
       "env": {
         "ADSAGENT_API_KEY": "SET_YOUR_KEY_HERE"
       }
     },
     "apify": {
       "command": "npx",
-      "args": ["-y", "@apify/mcp-server"],
+      "args": ["-y", "@apify/actors-mcp-server"],
       "env": {
         "APIFY_TOKEN": "SET_YOUR_TOKEN_HERE"
       }

@@ -22,6 +22,11 @@ A brand voice profile must exist. Look for:
 
 If neither exists, say: "Run /marketing-tools:brand-voice first to create the brand profile."
 
+**Multi-brand disambiguation**: if no brand-id was passed and more than one
+`user/plugins/<brand-id>/voice-profile.json` exists, don't guess — ask the user which brand this
+content is for. If exactly one exists, use it. Only fall back to the root `brand-profile.json`
+when no brand-scoped profile exists at all.
+
 ## Flow
 
 1. **Read the voice profile** — internalize the `voice_summary`, tone, ideal customer, editorial pillars, and transformation.
@@ -36,7 +41,8 @@ If neither exists, say: "Run /marketing-tools:brand-voice first to create the br
 3. **Write the content** following these voice rules:
    - Use the tone adjectives from the profile — never stray from them
    - Speak directly to the `ideal_customer.profile`
-   - Address the `main_objection` at some point in the content
+   - Address at least one of `main_objections` (pick whichever is most relevant to the target
+     keyword) at some point in the content
    - End with the `transformation` as a vision of the future
    - Avoid everything listed in `avoid`
    - Draw inspiration from `style_reference` but don't copy it
@@ -53,7 +59,7 @@ If neither exists, say: "Run /marketing-tools:brand-voice first to create the br
    ## [H2 — second section]
    ...
 
-   ## [H2 — main objection addressed]
+   ## [H2 — the chosen main objection addressed]
    ...
 
    ## Conclusion

@@ -47,7 +47,7 @@ Period: [start date] → [end date]
 |---------|--------------|-----------------|-------|---------|
 | ...     | ...          | ...             | -X    | ...     |
 
-### 🎯 Active Gap Zone (position 5–20)
+### 🎯 Active Gap Zone (position 5–20 — see `/marketing-tools:gap-zone` for the priority tiers and full methodology)
 [Top 5 gap-zone keywords this week]
 
 ### 📊 Summary
@@ -67,4 +67,6 @@ Period: [start date] → [end date]
 
 - If this is the first run (no previous period to compare against), generate only the current
   snapshot and note that the delta will be available next week.
-- Save a snapshot to `rank-history/[date].json` for cumulative history.
+- Save a snapshot to `rank-history/<domain>-[date].json` (domain slugified, e.g.
+  `example-com-2026-07-07.json`) — **always include the domain**, never just the date. Two
+  domains tracked on the same day would otherwise silently overwrite each other's history.

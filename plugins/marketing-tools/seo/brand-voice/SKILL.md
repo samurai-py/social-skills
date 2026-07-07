@@ -94,8 +94,13 @@ Run a structured interview with the user to capture the brand's identity, editor
      - Otherwise, fallback to: `brand-profile.json` at the project root.
    - Save the file and print a confirmation message showing the save location.
 
-5. **Logo Retrieval & Configuration**:
-   - Search the web for the brand's logo (preferably a vector SVG, or a transparent PNG).
-   - If found, clean/sanitize it and save it to `user/canva-killer/assets/custom/logo.svg`.
-   - Update the brand's JSON config `logo` property to reference this logo (e.g. `"logo": "custom/logo"`).
-   - If not found, prompt the user to upload the logo SVG through the Studio's logo upload tool, or configure `logoText` inside the brand config to display a clean uppercase text fallback.
+5. **Visual identity is a separate concern — don't duplicate it here**:
+   This skill covers voice only (substance: what to say). Palette, fonts, and logo (style: what
+   it looks like) belong to canva-killer's own skills, which already own
+   `user/canva-killer/brands/<id>.json`:
+   - New brand, no visual identity yet → point the user at the `brand-identity` skill
+     (`canva-killer/skills/brand-identity/SKILL.md`) — it learns palette/fonts/logo/pattern from
+     reference images.
+   - Just need the logo/an icon → `svg-builder`. Just need fonts → `font-builder`.
+   Don't fetch or write a logo from here — a duplicate, uncoordinated write to the same brand
+   JSON from two different skills is how that file ends up inconsistent.
