@@ -4,15 +4,14 @@
   "handle": "@mybrand",
   "logoText": "MY.BRAND",
   "palette": {
-    "bg": "#080c0a",
-    "surface": "#14201a",
-    "text": "#e9f2ec",
-    "muted": "#6f8279",
-    "accent": "#3dff8f"
+    "bg": "#111111",
+    "surface": "#222222",
+    "text": "#ffffff",
+    "muted": "#888888",
+    "accent": "#00ffff"
   },
   "fonts": {
-    "display": "'Space Grotesk', system-ui, sans-serif",
-    "mono": "'JetBrains Mono', ui-monospace, monospace",
-    "googleFonts": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    "display": "system-ui, sans-serif",
+    "mono": "ui-monospace, monospace"
   }
 }

@@ -5,6 +5,9 @@ description: Generates an icon/SVG element from a text description and saves it 
 
 # SVG builder — custom icons & decorations from a description
 
+> New to canva-killer, or unsure which skill you need? Start at
+> [`../canva-killer-guide/SKILL.md`](../canva-killer-guide/SKILL.md).
+
 Before generating, **check if the icon already exists in the Lucide library** (~1500 icons). If it does, generate nothing — just use `{{icon:name}}` in the template (e.g. `shield`, `lock`, `bitcoin`, `eye`, `terminal`). Only generate SVG for what's genuinely **custom/bespoke** (a brand mark, a scientific illustration, a background pattern).
 
 ## Honest limit
@@ -69,11 +72,15 @@ To draw regular hexagons (where the side length is $R$, vertical height is $\sqr
 
 ## How to Generate & Save
 1. **Understand the request**: what the icon is, whether it is line (stroke) or filled (solid), or if it is a decorative background/technical graphic.
-2. **Save to private user overlay**: Always write/save the generated SVG to:
-   `user/canva-killer/assets/custom/<name>.svg` (kebab-case, no accents).
-   This keeps brand assets isolated from the core public framework and properly ignored by git.
+2. **Save to the private user overlay, brand-scoped** (kebab-case, no accents):
+   - **Brand-exclusive** (a logo, a mark tied to one brand's identity — the common case): save to
+     `user/canva-killer/assets/custom/<brand-id>/<name>.svg`. `<brand-id>` must match the target
+     brand's `id` field exactly — that folder is the isolation boundary, same as templates.
+   - **Generic** (a genuinely reusable icon, not tied to any one brand's identity): save flat to
+     `user/canva-killer/assets/custom/<name>.svg` instead — every brand will see it.
+   Either way this keeps assets isolated from the core public framework and properly ignored by git.
 3. **Render a preview to verify**: use the `render` MCP tool with a template containing an icon slot (passing `{{icon:custom/<name>}}` to it) or generate a test card to verify the rendering. Show the user.
-4. **Iterate on feedback**. Once approved, the icon is available as `{{icon:custom/<name>}}` in any template.
+4. **Iterate on feedback**. Once approved, the icon is available as `{{icon:custom/<name>}}` — resolved brand-scoped-first, falling back to the generic tier, then the framework's example assets.
 
 ## Using Custom Icons in Templates
 - Library icons: `{{icon:shield}}` &rarr; Lucide SVG.
@@ -82,3 +89,10 @@ To draw regular hexagons (where the side length is $R$, vertical height is $\sqr
   ```html
   <span class="ic" style="color: {{accent}}; width: 96px; height: 96px; display:inline-block;">{{icon:custom/pirate}}</span>
   ```
+
+## See also
+- [`../brand-identity/SKILL.md`](../brand-identity/SKILL.md) — calls this skill for a brand's
+  logo/marks when onboarding a brand from reference images; use this skill directly for a
+  one-off icon request instead.
+- [`../layout-recovery/SKILL.md`](../layout-recovery/SKILL.md) — calls this skill for decorative
+  backgrounds/borders when reverse-engineering a design's layout.
