@@ -72,4 +72,6 @@ Period: last 30 days | Total spend: $X | Conversions: X | Avg. CPA: $X
 ## Notes
 
 - If the MCP isn't configured, instruct the user to set up `ADSAGENT_API_KEY` in `.mcp.json`.
-- Save the result to `ads-audit-[date].json` for future comparison.
+- Save the result to `ads-audit-<account>-[date].json` (account name/ID slugified) — **always
+  include the account**, never just the date. Two accounts audited on the same day would
+  otherwise silently overwrite each other's saved result.

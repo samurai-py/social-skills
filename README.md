@@ -18,7 +18,7 @@
 <p align="center">
   <a href="#why-it-exists">Why</a> |
   <a href="#what-you-can-build">Build</a> |
-  <a href="#quick-start">Quick start</a> |
+  <a href="#installation">Installation</a> |
   <a href="#repo-map">Repo map</a> |
   <a href="#roadmap">Roadmap</a>
 </p>
@@ -37,6 +37,9 @@ It combines two things:
 
 The mascot is a chameleon for a reason: SocialSkills has no fixed visual identity when it is
 working for you. It takes on your brand's colors, fonts and voice.
+
+> [!WARNING]
+> This is built for **agentic, vision-capable models** — the agent must be able to call tools/skills on its own *and* read images directly (reference posts, logos, screenshots). A text-only model, or one that can't reliably invoke MCP tools/skills, will not work well here: brand identity extraction, font matching, and layout recovery all depend on the model actually looking at the image you give it, not guessing from a text description of it. Tested against Claude (Sonnet/Opus family); other agentic + vision models should work but aren't verified.
 
 ## Why it exists
 
@@ -69,6 +72,15 @@ brand + template + post data -> PNG
 
 Templates expose `{{tokens}}`. Agents fill the tokens. Humans can still edit the template.
 
+**Learn a brand's visual identity from images.** Hand the agent a few reference posts/banners
+and the `brand-identity` skill extracts palette, fonts, logo, and background pattern into a real
+`brand.json` — no manual hex-code hunting. Palette extraction is a deterministic pixel-histogram
+script (not the model eyeballing colors): it separates "large flat area" colors (background,
+surface) from "small but vivid" ones (a logo mark, a CTA badge) so an actual brand accent doesn't
+get lost behind a duller color that just happens to cover more pixels. Once the identity exists,
+`layout-recovery` can clone a *specific* design's layout on top of it, and every render after
+that stays isolated to that one brand — see [`canva-killer/skills/canva-killer-guide/SKILL.md`](canva-killer/skills/canva-killer-guide/SKILL.md) for the full picture.
+
 ### Channel-aware writing
 
 The skills under `plugins/marketing-tools/` help an agent:
@@ -76,7 +88,8 @@ The skills under `plugins/marketing-tools/` help an agent:
 - interview a brand and build a voice profile;
 - write LinkedIn, Instagram, blog and TikTok-style content;
 - research competitors and content gaps;
-- audit ads and SEO basics;
+- audit Google Ads accounts and find wasted spend;
+- generate Meta Ads static creatives (`static-ads`, FAL AI + Gemini);
 - reuse the same brand profile across channels.
 
 ### A private content workspace
@@ -84,23 +97,39 @@ The skills under `plugins/marketing-tools/` help an agent:
 Your real brands, exported art and private channel plugins live under `user/`, which is gitignored.
 The public framework stays clean; your client or personal brand data does not leak into commits.
 
-## Quick start
+## Installation
 
-Render social art locally:
+There are two independent pieces here, and they are not equally easy to set up — be clear with
+yourself about which one you actually need before assuming "installation" means all of it.
+
+### 1. Clone the repo
+
+```bash
+git clone <this-repo>
+```
+
+That alone is enough for the skills that need **no external API at all**: `brand-voice`,
+`content-writer`, `ai-shopping` (marketing-tools), and every canva-killer skill except the actual
+PNG rendering (`brand-identity`, `svg-builder`, `font-builder`, `layout-recovery` all just read
+images and write files/text).
+
+### 2. canva-killer — one local MCP server, genuinely easy
+
+This is the part that renders PNGs. It's fully local, needs no API key, and is one real,
+installable MCP server:
 
 ```bash
 cd canva-killer
 npm install
-npm run studio
 ```
 
-Open the Studio at:
+Then either drive it as an agent via the shipped `canva-killer/.mcp.json` (spawns
+`node src/server.mjs` over stdio — `list_brands`, `list_templates`, `render`, `render_carousel`),
+or open the human UI:
 
-```text
-http://localhost:4173
+```bash
+npm run studio   # http://localhost:4173
 ```
-
-Use the tabs this way:
 
 | Tab | Purpose |
 |---|---|
@@ -109,6 +138,37 @@ Use the tabs this way:
 | **Brand** | Edit palette, fonts and logo data |
 
 For direct rendering, see [canva-killer/README.md](canva-killer/README.md).
+
+### 3. marketing-tools integrations — bring your own, where real APIs are involved
+
+Only needed for `gap-zone`, `rank-tracker`, `ads-audit`, `waste-finder` (Google Search
+Console/Ads), `competitor-analysis` (Apify), and `static-ads` (Meta creatives via FAL AI +
+Gemini). Be honest with yourself about what's actually plug-and-play here:
+
+- **Apify** (`competitor-analysis`) is a real, installable package —
+  `npx -y @apify/actors-mcp-server`, already wired in `plugins/marketing-tools/.mcp.json`. Set
+  `APIFY_TOKEN` and it works.
+- **AdsAgent** (GSC + Google Ads — `gap-zone`, `rank-tracker`, `ads-audit`, `waste-finder`) and
+  **static-ads-mcp** (Meta creatives) are **not** installable packages this repo ships. They're
+  slots: point `ADSAGENT_MCP_PATH` / `STATIC_ADS_MCP_PATH` at your own MCP server checkout.
+  Nothing renders until you bring one.
+
+See [AGENTS.md § Configuration](AGENTS.md#configuration) for the exact env vars.
+
+### Why this stays file-based instead of "just an MCP install"
+
+A fair question: could this be a single easy MCP connection instead of a repo you clone and that
+writes files into itself? For canva-killer specifically — no, on purpose. The templates, the
+brand palettes, the exported PNGs living as real files in a real git history *is* the product:
+version control on your visual identity, templates a human can open and edit, brand data that's
+yours and never touches a third-party database. A stateless MCP-only version would mean either
+losing that (a hosted service holding your brand config instead) or building a database-backed
+product behind the MCP calls — a different tool, not a lighter install of this one. The
+`canva-killer` MCP server itself is already a one-command install with zero config; the
+repo-cloning and file-writing is the local-first tradeoff, not accidental complexity. What *is*
+genuinely more complex than it should be is the marketing-tools side above — that complexity is
+real (BYO external MCP servers), and worth being upfront about instead of implying "add API key
+and go."
 
 ## Repo map
 
@@ -165,10 +225,14 @@ MCP paths are configured through environment variables:
 ```bash
 export CONTENT_MCP_PATH=/path/to/your/content-mcp/checkout
 export STATIC_ADS_MCP_PATH=/path/to/your/static-ads-mcp/checkout
+export ADSAGENT_MCP_PATH=/path/to/your/google-ads-and-gsc-mcp/checkout
 ```
 
-API keys for public marketing tools use placeholders in `plugins/marketing-tools/.mcp.json`.
-Brand secrets belong in `.env` files under `user/plugins/<brand>/`, never in git.
+`static-ads` and `adsagent` are bring-your-own MCP servers — this repo only has the env-var slot,
+not the server. `apify` is the one real installable package (`@apify/actors-mcp-server`); its
+token is the only actual placeholder-to-replace in `plugins/marketing-tools/.mcp.json`. See
+[Installation](#installation) above for the full breakdown. Brand secrets belong in `.env` files
+under `user/plugins/<brand>/`, never in git.
 
 ## Roadmap
 
