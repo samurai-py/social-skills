@@ -1,29 +1,40 @@
 <!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
 <link href="{{googleFonts}}" rel="stylesheet">
-<script type="application/json" data-ck-model>{"dims":[1080,1080],"blocks":[{"id":1,"type":"rect","x":40,"y":40,"w":1000,"h":68,"color":"surface","radius":16,"rot":0},{"id":2,"type":"logo","x":70,"y":56,"size":36,"color":"text","rot":0},{"id":3,"type":"texto","x":852,"y":64,"token":"data","text":"","font":"mono","size":24,"color":"muted","weight":400,"ls":0,"rot":0},{"id":4,"type":"window","x":40,"y":132,"w":1000,"h":788,"title":"~/{{logoText}} — post.md","bar":52,"radius":16,"src":"","fit":"cover","effect":"none","rot":0},{"id":5,"type":"kicker","x":88,"y":300,"token":"kicker","text":"KICKER","font":"mono","size":26,"color":"accent","ls":4,"upper":true,"weight":400,"rot":0},{"id":6,"type":"bar","x":88,"y":348,"bstyle":"underline","w":110,"h":9,"color":"accent","radius":5,"rot":0},{"id":7,"type":"texto","x":88,"y":392,"token":"titulo","text":"","font":"disp","size":84,"weight":700,"color":"text","ls":-2,"rot":0,"w":860},{"id":8,"type":"texto","x":88,"y":842,"token":"cta","text":"","font":"mono","size":26,"color":"accent","weight":600,"ls":0,"rot":0},{"id":9,"type":"texto","x":760,"y":842,"token":"handle","text":"","font":"mono","size":24,"color":"muted","weight":400,"ls":0,"rot":0}],"meta":{"size":"1080x1080","pattern":"grid"}}</script>
 <style>
   {{baseStyles}}
-  #canvas{width:1080px;height:1080px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};}
+  /* Generic layout — showcases the procedural pattern system ({{patternClass}}) as the
+     background, no photo needed. Code-only (not block-editable): see story.html for the
+     bgimage-driven counterpart, blog-cover.html for the icon-forward one. */
+  #canvas{width:1080px;height:1080px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};padding:80px;display:flex;flex-direction:column;justify-content:space-between;}
+  .lockup{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
+  .lockup .mark{display:flex;align-items:center;gap:14px;}
+  .lockup .mark .ic{width:40px;height:40px;color:{{text}};}
+  .lockup .mark span{font-family:{{mono}};font-size:24px;letter-spacing:1px;color:{{muted}};}
+  .lockup .handle{font-family:{{mono}};font-size:22px;color:{{muted}};}
+  .mid{position:relative;z-index:1;}
+  .kicker{display:inline-flex;align-items:center;gap:10px;font-family:{{mono}};font-size:24px;font-weight:600;color:{{accent}};text-transform:uppercase;letter-spacing:4px;padding-bottom:22px;}
+  .kicker::before{content:"";width:34px;height:9px;border-radius:5px;background:{{accent}};}
+  .title{font-weight:700;font-size:92px;line-height:1.04;letter-spacing:-2px;color:{{text}};max-width:920px;}
+  .foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
+  .cta{font-family:{{mono}};font-size:28px;font-weight:600;color:{{accent}};}
 </style></head>
 <body>
   <div id="canvas">
     <div class="bg-photo" style="{{bgstyle}}"></div>
     <div class="bg-overlay"></div>
     <div class="bg-pattern {{patternClass}}"></div>
-    <div style="position:absolute;left:40px;top:40px;width:1000px;height:68px;background:{{surface}};border-radius:16px;"></div>
-    <span style="position:absolute;left:70px;top:56px;height:36px;color:{{text}};display:flex">{{logoSvg}}</span>
-    <div style="position:absolute;left:852px;top:64px;font-family:{{mono}};font-size:24px;font-weight:400;color:{{muted}};letter-spacing:0px;line-height:1.05;">{{data}}</div>
-    <div style="position:absolute;left:40px;top:132px;width:1000px;height:788px;border:1px solid {{surface}};border-radius:16px;overflow:hidden;display:flex;flex-direction:column;background:{{bg}}">
-      <div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;background:{{surface}};font-family:{{mono}};font-size:20px;color:{{muted}}">
-        <span style="width:15px;height:15px;border-radius:50%;background:{{accent}}"></span>
-        <span style="flex:1">~/{{logoText}} — post.md</span><span style="letter-spacing:3px">_ □ ✕</span>
-      </div><div style="flex:1"></div>
+    <div class="lockup">
+      <div class="mark"><span class="ic">{{logoSvg}}</span><span>{{logoText}}</span></div>
+      <div class="handle">{{handle}}</div>
     </div>
-    <div style="position:absolute;left:88px;top:300px;font-family:{{mono}};font-size:26px;font-weight:400;color:{{accent}};letter-spacing:4px;line-height:1.05;text-transform:uppercase;">{{kicker}}</div>
-    <div style="position:absolute;left:88px;top:348px;width:110px;height:9px;background:{{accent}};border-radius:5px;"></div>
-    <div style="position:absolute;left:88px;top:392px;width:860px;font-family:{{display}};font-size:84px;font-weight:700;color:{{text}};letter-spacing:-2px;line-height:1.05;">{{titulo}}</div>
-    <div style="position:absolute;left:88px;top:842px;font-family:{{mono}};font-size:26px;font-weight:600;color:{{accent}};letter-spacing:0px;line-height:1.05;">{{cta}}</div>
-    <div style="position:absolute;left:760px;top:842px;font-family:{{mono}};font-size:24px;font-weight:400;color:{{muted}};letter-spacing:0px;line-height:1.05;">{{handle}}</div>
+    <div class="mid">
+      <div class="kicker">{{kicker}}</div>
+      <div class="title">{{titulo}}</div>
+    </div>
+    <div class="foot">
+      <span class="cta">{{cta}}</span>
+      <span class="ic" style="width:44px;height:44px;color:{{accent}}">{{icon:sparkles}}</span>
+    </div>
   </div>
 </body></html>
