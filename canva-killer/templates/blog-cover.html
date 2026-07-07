@@ -1,107 +1,28 @@
 <!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
 <link href="{{googleFonts}}" rel="stylesheet">
+<script type="application/json" data-ck-model>{"dims":[1200,630],"blocks":[{"id":1,"type":"rect","x":36,"y":32,"w":1128,"h":56,"color":"surface","radius":12,"rot":0},{"id":2,"type":"logo","x":60,"y":44,"size":26,"color":"text","rot":0},{"id":3,"type":"texto","x":1030,"y":48,"token":"data","text":"","font":"mono","size":20,"color":"muted","weight":400,"ls":0,"rot":0},{"id":4,"type":"window","x":36,"y":104,"w":1128,"h":494,"title":"~/{{logoText}} — blog","bar":44,"radius":12,"src":"","fit":"cover","effect":"none","rot":0},{"id":5,"type":"kicker","x":74,"y":210,"token":"kicker","text":"KICKER","font":"mono","size":22,"color":"accent","ls":4,"upper":true,"weight":400,"rot":0},{"id":6,"type":"texto","x":74,"y":258,"token":"titulo","text":"","font":"disp","size":58,"weight":700,"color":"text","ls":-1.5,"rot":0,"w":1000},{"id":7,"type":"texto","x":74,"y":522,"token":"cta","text":"","font":"mono","size":20,"color":"accent","weight":600,"ls":0,"rot":0},{"id":8,"type":"texto","x":1000,"y":522,"token":"handle","text":"","font":"mono","size":20,"color":"muted","weight":400,"ls":0,"rot":0}],"meta":{"size":"1200x630","pattern":"grid"}}</script>
 <style>
   {{baseStyles}}
   #canvas{width:1200px;height:630px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};}
-  .content-wrap {
-    padding: 70px 80px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-sizing: border-box;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .logo-area {
-    font-size: 24px;
-    font-weight: 800;
-    color: {{accent}};
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .logo-area svg {
-    height: 24px;
-    width: auto;
-  }
-  .header-meta {
-    font-family: {{mono}};
-    font-size: 16px;
-    color: {{muted}};
-  }
-  .main-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 15px;
-  }
-  .kicker {
-    font-family: {{mono}};
-    font-size: 18px;
-    font-weight: 600;
-    color: {{accent}};
-    letter-spacing: 4px;
-    text-transform: uppercase;
-  }
-  .title {
-    font-size: 56px;
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -1px;
-    max-width: 900px;
-  }
-  .title span {
-    color: {{accent}};
-  }
-  .body-text {
-    font-size: 22px;
-    line-height: 1.5;
-    color: {{muted}};
-    max-width: 900px;
-  }
-  .footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top: 1px solid {{surface}};
-    padding-top: 20px;
-  }
-  .footer-handle {
-    font-family: {{mono}};
-    font-size: 18px;
-    color: {{muted}};
-  }
-  .footer-cta {
-    font-family: {{mono}};
-    font-size: 18px;
-    font-weight: 600;
-    color: {{accent}};
-  }
 </style></head>
-<body><div id="canvas">
-  <div class="bg-photo" style="{{bgstyle}}"></div>
-  <div class="bg-overlay"></div>
-  <div class="bg-pattern {{patternClass}}"></div>
-  <div class="content-wrap">
-    <div class="header">
-      <div class="logo-area">{{logoSvg}}{{logoText}}</div>
-      <div class="header-meta">{{topright}}</div>
+<body>
+  <div id="canvas">
+    <div class="bg-photo" style="{{bgstyle}}"></div>
+    <div class="bg-overlay"></div>
+    <div class="bg-pattern {{patternClass}}"></div>
+    <div style="position:absolute;left:36px;top:32px;width:1128px;height:56px;background:{{surface}};border-radius:12px;"></div>
+    <span style="position:absolute;left:60px;top:44px;height:26px;color:{{text}};display:flex">{{logoSvg}}</span>
+    <div style="position:absolute;left:1030px;top:48px;font-family:{{mono}};font-size:20px;font-weight:400;color:{{muted}};letter-spacing:0px;line-height:1.05;">{{data}}</div>
+    <div style="position:absolute;left:36px;top:104px;width:1128px;height:494px;border:1px solid {{surface}};border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:{{bg}}">
+      <div style="height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;background:{{surface}};font-family:{{mono}};font-size:17px;color:{{muted}}">
+        <span style="width:12px;height:12px;border-radius:50%;background:{{accent}}"></span>
+        <span style="flex:1">~/{{logoText}} — blog</span><span style="letter-spacing:3px">_ □ ✕</span>
+      </div><div style="flex:1"></div>
     </div>
-    <div class="main-body">
-      <div class="kicker">{{kicker}}</div>
-      <div class="title">{{titulo}}</div>
-      <div class="body-text">{{corpo}}</div>
-    </div>
-    <div class="footer">
-      <div class="footer-handle">{{handle}}</div>
-      <div class="footer-cta">{{cta}}</div>
-    </div>
+    <div style="position:absolute;left:74px;top:210px;font-family:{{mono}};font-size:22px;font-weight:400;color:{{accent}};letter-spacing:4px;line-height:1.05;text-transform:uppercase;">{{kicker}}</div>
+    <div style="position:absolute;left:74px;top:258px;width:1000px;font-family:{{display}};font-size:58px;font-weight:700;color:{{text}};letter-spacing:-1.5px;line-height:1.05;">{{titulo}}</div>
+    <div style="position:absolute;left:74px;top:522px;font-family:{{mono}};font-size:20px;font-weight:600;color:{{accent}};letter-spacing:0px;line-height:1.05;">{{cta}}</div>
+    <div style="position:absolute;left:1000px;top:522px;font-family:{{mono}};font-size:20px;font-weight:400;color:{{muted}};letter-spacing:0px;line-height:1.05;">{{handle}}</div>
   </div>
-</div></body></html>
+</body></html>
