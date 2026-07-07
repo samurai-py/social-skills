@@ -833,13 +833,32 @@
                 el.textContent = b.logoText || b.name || b.id;
             }
             function loadFonts(b) {
-                if (!b.fonts?.googleFonts) return;
+                let href = b.fonts?.googleFonts;
+                if (!href && (b.fonts?.display || b.fonts?.mono)) {
+                    const SYSTEM_FONTS = new Set([
+                        "system-ui", "sans-serif", "serif", "monospace", "ui-monospace",
+                        "cursive", "fantasy", "inherit", "initial", "unset"
+                    ]);
+                    const clean = (f) => {
+                        if (!f) return "";
+                        const m = f.match(/['"]([^'"]+)['"]/);
+                        const name = m ? m[1] : f.split(",")[0].trim();
+                        return SYSTEM_FONTS.has(name.toLowerCase()) ? "" : name;
+                    };
+                    const d = clean(b.fonts.display);
+                    const m = clean(b.fonts.mono);
+                    const fams = [];
+                    if (d) fams.push("family=" + encodeURIComponent(d) + ":wght@400;500;600;700");
+                    if (m) fams.push("family=" + encodeURIComponent(m) + ":wght@400;500;600;700");
+                    if (fams.length) href = "https://fonts.googleapis.com/css2?" + fams.join("&") + "&display=swap";
+                }
                 const o = $("#gf");
                 if (o) o.remove();
+                if (!href) return;
                 const l = document.createElement("link");
                 l.id = "gf";
                 l.rel = "stylesheet";
-                l.href = b.fonts.googleFonts;
+                l.href = href;
                 document.head.appendChild(l);
             }
             function applyVars() {

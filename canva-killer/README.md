@@ -118,6 +118,7 @@ placeholders. See `templates/post-square.html` as a reference.
 - [x] Carousel helper — `renderCarousel()` (slide array → N PNGs in a single browser) + `render_carousel` MCP tool
 - [x] Icons — `{{icon:shield}}` (Lucide library, ~1500) + `{{icon:custom/name}}` (generated SVGs); inherit color via `currentColor`
 - [x] `svg-builder` skill — generates a custom icon/SVG element from a description → `assets/custom/`
+- [x] `font-builder` skill — identifies visual fonts via OCR, matches to Google Fonts, and auto-resolves stylesheets
 - [x] Shared `base.css` (`partials/base.css`, injected via `{{baseStyles}}`) — reset, background layers, helpers
 - [x] Procedural patterns — `data.pattern`: `grid` (default) · `dots` · `scanlines` · `mesh` · `hatch` · `noise` · `none`
 - [x] Studio mode (`studio/`, `npm run studio` → http://localhost:4173) — **Compose** (auto form from tokens + live preview + PNG export) and **Create template** (magnetic snap-to-grid blocks → exports `.html`)
