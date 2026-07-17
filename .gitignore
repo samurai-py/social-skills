@@ -9,3 +9,17 @@ tmp/
 **/tmp/
 drafts/
 node_modules/
+
+# aag:ignore:start
+# Local AAG graph and agent-integration artifacts. Keep .mcp.json versioned.
+.aag/
+.claude/settings.json
+.claude/skills/aag-*/
+.cursor/mcp.json
+.cursor/hooks.json
+.cursor/rules/aag.mdc
+.gemini/settings.json
+.kiro/settings/mcp.json
+.kiro/steering/aag.md
+opencode.json
+# aag:ignore:end

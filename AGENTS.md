@@ -64,9 +64,10 @@ creatives (FAL AI + Gemini), unrelated to SEO; it was miscategorized before.
 
 Each real brand is its own plugin under `user/plugins/<brand>/`: the voice lives in the slice,
 the mechanics (how to post, format, length limits) live in `shared/` skills reused across
-channels. Registered in the root `.claude-plugin/marketplace.json` (`source:
-"./user/plugins/<brand>"`). Brand plugins are **never committed** — they're example entries in
-`user/`, gitignored.
+channels. Register private brands only in `user/.claude-plugin/marketplace.json` (`source:
+"./plugins/<brand>"`). Both the brand and its local marketplace stay under `user/`, gitignored.
+The root `.claude-plugin/marketplace.json` is public and must contain only public framework
+plugins — never real brand names, descriptions, paths, or other private metadata.
 
 ### Copywriting Voice Hierarchy (Substance vs. Style)
 
@@ -145,9 +146,9 @@ To create your own brand or channel, follow [`_templates/README.md`](_templates/
 
 ## Configuration
 
-Edit `.claude-plugin/marketplace.json` to register your brand plugins (`source:
-"./user/plugins/<brand>"`). `.mcp.json` files pointing to MCP servers outside this repo use
-environment variables — export them in your shell:
+Edit `user/.claude-plugin/marketplace.json` to register private brand plugins (`source:
+"./plugins/<brand>"`). Never register them in the root public marketplace. `.mcp.json` files
+pointing to MCP servers outside this repo use environment variables — export them in your shell:
 
 ```bash
 export CONTENT_MCP_PATH=/path/to/your/content-mcp/checkout
@@ -177,3 +178,17 @@ plugin under `user/` — never committed (copy the matching `.env.example`).
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+<!-- aag:start -->
+## aag — code knowledge graph
+
+This repo has an `aag` knowledge graph (`.aag/graph.db`), kept fresh automatically.
+
+- How does X work / what calls X: `aag explore <query>`
+- What breaks if X changes: `aag impact <symbol>`
+- Safe multi-file rename: `aag rename <old> <new> [--write]`
+- Tests affected by a diff: `git diff --name-only | aag affected --stdin`
+
+Prefer these over manual grepping for call-graph questions; edges are
+confidence-tagged (EXTRACTED/INFERRED/AMBIGUOUS) — verify AMBIGUOUS ones.
+<!-- aag:end -->
