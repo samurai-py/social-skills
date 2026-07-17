@@ -222,9 +222,22 @@ async function renderInPage(browser, { brandId, templateId = 'post-square', data
   const html = fillTemplate(templateHtml, brand, data);
   const outPath = out || path.join(DEFAULT_OUT_DIR, `${brandId}-${templateId}.png`);
 
-  // deviceScaleFactor 2 => PNG @2x (crisp; social networks downsample it). The #canvas element's
-  // screenshot captures the whole box even if larger than the viewport, so a fixed viewport is fine.
-  const page = await browser.newPage({ viewport: { width: 1080, height: 1080 }, deviceScaleFactor: 2 });
+  // Seed the viewport at #canvas's declared size up front (parsed the same way the studio does
+  // it) — avoids a mid-render viewport resize for any template taller than the old fixed
+  // 1080x1080 starting viewport (every story/9:16 template).
+  const dimMatch = templateHtml.match(/width:\s*(\d+)px;\s*height:\s*(\d+)px/);
+  const [startW, startH] = dimMatch ? [+dimMatch[1], +dimMatch[2]] : [1080, 1080];
+
+  // deviceScaleFactor 2 => PNG @2x (crisp; social networks downsample it). BUT: headless
+  // Chromium's screenshot has a real bug at 2x on tall pages (confirmed independent of clip vs
+  // fullPage, and independent of any viewport resize) — output height around ~3800 device px
+  // (i.e. any 9:16 story canvas, height 1920) grabs a wrapped/stale frame, visible as a sliver of
+  // the bottom-of-page content ghosting in at y=0. Below that device-pixel height it's fine (a
+  // 1080x1350 feed post at 2x = 2700 device px tested clean). Dropping to 1x for tall canvases
+  // sidesteps it; 1080x1920 at 1x is already the native target resolution for a story anyway, so
+  // nothing is actually lost.
+  const dsf = startH * 2 > 3000 ? 1 : 2;
+  const page = await browser.newPage({ viewport: { width: startW, height: startH }, deviceScaleFactor: dsf });
   try {
     await page.setContent(html, { waitUntil: 'networkidle' });
     await page.evaluate(() => document.fonts.ready); // wait for fonts to load
@@ -233,7 +246,13 @@ async function renderInPage(browser, { brandId, templateId = 'post-square', data
     // Capture via clip with the viewport sized to #canvas — avoids elementHandle.screenshot's
     // "wait for stable" (which hangs with certain content, e.g. inline SVG) and scroll stitching.
     const box = await el.boundingBox();
-    await page.setViewportSize({ width: Math.ceil(box.x + box.width), height: Math.ceil(box.y + box.height) });
+    const wantW = Math.ceil(box.x + box.width), wantH = Math.ceil(box.y + box.height);
+    if (wantW !== startW || wantH !== startH) {
+      // Fallback for a template whose real size didn't match the regex guess — still resize,
+      // still settle a frame first (see note above for why).
+      await page.setViewportSize({ width: wantW, height: wantH });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    }
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     await page.screenshot({ path: outPath, clip: box });
     return outPath;
