@@ -14,8 +14,9 @@ user**. The flow below is the script the agent follows.
 1. Copy `_templates/brand-plugin/` → `user/plugins/<brand>/` (a brand is user data — it lives in
    `user/`, gitignored, never published).
 2. Edit `user/plugins/<brand>/.claude-plugin/plugin.json`: `name`, `description`, `author`, and
-   the `skills` list (one `./<channel>` per channel). Add the entry to
-   `.claude-plugin/marketplace.json` with `source: "./user/plugins/<brand>"`.
+   the `skills` list (one `./<channel>` per channel). Add the entry to the private local
+   `user/.claude-plugin/marketplace.json` with `source: "./plugins/<brand>"`. Never add a real
+   brand to the root `.claude-plugin/marketplace.json`; that file is public and versioned.
 3. Ask the user about the brand's identity (what it is, audience, tone, what it would never say)
    — this becomes the basis for the channels' style guides.
 4. If the brand has more than one facet/voice (e.g. a sub-brand), create separate skills per
