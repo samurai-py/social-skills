@@ -62,14 +62,26 @@ A minimal local server that reuses `render.mjs`. Three tabs:
 - **Compose**: pick brand + template, fill in the fields (form generated from the
   `{{tokens}}`), see a live preview (iframe, via `fillTemplate`), and export the @2x PNG (via
   Playwright).
-- **Create / edit**: add blocks (title, kicker, text, bar with variants, icon, logo, image,
-  retro window, color panel), drag with **snap-to-grid** (20px), edit props. **Opens and edits
-  existing templates** (block model is embedded in the saved HTML). Background patterns render
-  live on the canvas. Searchable **icon browser** (~1500 Lucide icons). Keyboard control: arrows
-  move the selected block (Shift = 1px), `[`/`]` reorder the stack, Del deletes, Ctrl+D
-  duplicates, Esc deselects. Exports `.html` to `user/canva-killer/templates/<active brand>/` —
-  exclusive to whichever brand is selected when you save.
-- **Brand**: palette/fonts editor + **logo upload** + live preview; saves `brands/<id>.json`.
+- **Create / edit**: two kinds of template, one tab.
+  - *Block templates* (made here): add blocks (title, kicker, text, bar, icon, logo, image, retro
+    window, panel), drag with **snap-to-grid** (20px), edit props, keyboard control (arrows,
+    `[`/`]`, Del, Ctrl+D, Esc). Saved as `.html` with the block model embedded, exclusive to the
+    active brand.
+  - *Code templates* (written by the agent, or recovered from a reference): open one and you get
+    **inspect & adjust** — click any element in the rendered preview, nudge it with the arrows,
+    change size/weight/spacing/width/opacity/alignment, swap its color token, hide it. **Save
+    adjustments** writes a `<style data-ck-overrides>` block into the template file, with
+    structural selectors and `{{tokens}}`, so the agent reads the same edits you made. Opening a
+    framework skeleton and saving copies it into the brand's folder first.
+- **Brand**: palette editor, **fonts with live samples** (pick from a curated Google list or type
+  any family, choose the weight, add roles like `cta`/`kicker`, **upload the brand's own
+  .woff2/.ttf/.otf** straight into `user/canva-killer/fonts/<brand>/`), logo upload, and a live
+  preview of the *unsaved* edits on the brand's own first template; saves `brands/<id>.json`.
+
+Text blocks in Create/edit have a **Width** (0 = auto): set it to make a title wrap. Image and
+window blocks have an **Image slot token**: leave it empty for a fixed image, or name it (e.g.
+`hero`) to make the slot dynamic — Compose then shows a `hero` field and an agent fills
+`data.hero` per post.
 
 **Autosave**: studio state is saved to `localStorage` every 60s (and restored on open).
 
@@ -91,6 +103,38 @@ background + grid show.
 node src/render.mjs --brand mybrand --template blog-cover --data content/post.json
 # where content/post.json includes:  { "titulo": "...", "bgimage": "path/to/photo.jpg" }
 ```
+
+## Brand fonts as files (real fidelity)
+
+Drop the brand's own font files in `user/canva-killer/fonts/<brandId>/`, named
+`<Family Name>-<weight>[-italic].woff2|ttf|otf` (e.g. `Montserrat-300.woff2`). They become
+`@font-face` rules in every render and in the studio, embedded as data URIs, and that family is
+no longer fetched from Google Fonts. Use the role in templates as `{{font:<role>}}`. Explicit
+mapping is also possible: `fonts.files: [{ family, src, weight, style }]`.
+
+## Templates: the brand's own vs. the neutral skeletons
+
+The four framework templates (`post-square`, `story`, `blog-cover`, `carrossel-slide`) are
+**neutral skeletons**: flat, undecorated, no pattern — they show a brand's palette, fonts and
+logo and nothing else. They exist so a fresh brand renders *something*; the brand's actual look
+lives in `user/canva-killer/templates/<brandId>/` (recovered from its real posts or authored in
+the studio). Once a brand has its own layouts, set `"genericTemplates": false` in its JSON and
+the skeletons disappear from `list_templates` and from the studio for that brand. Background
+patterns default to `none`; `grid` & co. are opt-in per brand or per render.
+
+## Per-post image slots, gradient, variants
+
+- **Image slots**: a template can declare `background-image:url('{{img:hero}}')`; `data.hero`
+  (local path or URL) fills it at render time. Different from `bgimage`, which is the single
+  full-bleed photo layer.
+- **`{{gradient}}`**: the brand's `gradient` field, or `linear-gradient(95deg, accent, accent2)`
+  when the brand doesn't declare one.
+- **Variants**: a brand may carry `variants: { light: { bg, surface, text, muted, accent } }`.
+  `data.variant = "light"` renders any template with that palette override.
+- **Fonts**: every key under `fonts` is reachable as `{{font:<key>}}` (`{{font:body}}`,
+  `{{font:cta}}`…; `{{display}}` and `{{mono}}` also work bare). All named families are loaded
+  from Google Fonts automatically, one request per family (so `Tinos` lacking weight 500 no longer
+  kills `Oswald` next to it), unless `fonts.googleFonts` is set explicitly.
 
 ## Adding a brand
 
@@ -138,6 +182,10 @@ Create `brands/<id>.json`:
 - [x] Studio mode (`studio/`, `npm run studio` → http://localhost:4173) — **Compose** (auto form from tokens + live preview + PNG export) and **Create template** (magnetic snap-to-grid blocks → exports `.html`)
 - [x] Keyboard control + stacking order in the block editor (arrows, `[`/`]`, Del, Ctrl+D, Esc)
 - [x] SocialSkills visual identity applied to the studio (see [`identity/`](../identity/))
+- [x] Per-post image slots (`{{img:name}}`), `{{gradient}}`, brand `variants` (`data.variant`), all `fonts.*` as tokens
+- [x] Measurement scripts for the identity skills — multi-image OKLab palette extraction with contact sheet, layout measurement with gridded overlay, reference-vs-render scoring (`compare.mjs`)
+- [x] Brand font files (`user/canva-killer/fonts/<brandId>/`) as `@font-face`; Google Fonts requested one family at a time
+- [x] Framework templates reduced to neutral skeletons; `genericTemplates: false` hides them per brand; pattern default `none`
 - [ ] Built-in icon/SVG element library (mitigates the lack of a ready-made asset catalog)
 
 ## License

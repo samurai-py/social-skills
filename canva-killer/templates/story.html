@@ -3,20 +3,21 @@
 <link href="{{googleFonts}}" rel="stylesheet">
 <style>
   {{baseStyles}}
-  /* Generic layout — showcases the background-photo slot (data.bgimage) full-bleed, with the
-     dark overlay gradient keeping text legible. Content anchored to the bottom third, the
-     classic story convention. Code-only (see post-square.html for the note on why). */
+  /* NEUTRAL SKELETON — 1080x1920 story. Full-bleed photo slot (data.bgimage) with the
+     legibility overlay, content in the bottom third. No decoration of its own; see
+     post-square.html for the skeleton rules. Code-only. */
   #canvas{width:1080px;height:1920px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};padding:76px;display:flex;flex-direction:column;justify-content:space-between;}
   .lockup{position:relative;z-index:1;display:flex;align-items:center;gap:14px;}
-  .lockup .ic{width:38px;height:38px;color:#fff;}
-  .lockup span{font-family:{{mono}};font-size:24px;letter-spacing:1px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.4);}
+  .lockup .ic{width:38px;height:38px;color:{{text}};}
+  .lockup .ic:empty{display:none;}
+  .lockup span{font-family:{{mono}};font-size:24px;letter-spacing:1px;color:{{text}};}
   .bottom{position:relative;z-index:1;}
-  .kicker{display:inline-flex;align-items:center;gap:10px;font-family:{{mono}};font-size:26px;font-weight:600;color:{{accent}};text-transform:uppercase;letter-spacing:4px;padding-bottom:24px;}
-  .kicker::before{content:"";width:36px;height:9px;border-radius:5px;background:{{accent}};}
-  .title{font-weight:700;font-size:104px;line-height:1.05;letter-spacing:-2.5px;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.35);}
+  .kicker{font-family:{{mono}};font-size:26px;color:{{accent}};text-transform:uppercase;letter-spacing:3px;padding-bottom:24px;}
+  .kicker:empty{display:none;}
+  .title{font-weight:700;font-size:104px;line-height:1.05;letter-spacing:-2.5px;color:{{text}};}
   .foot{display:flex;align-items:center;justify-content:space-between;margin-top:36px;}
-  .cta{font-family:{{mono}};font-size:30px;font-weight:600;color:{{accent}};}
-  .handle{font-family:{{mono}};font-size:26px;color:#fff;opacity:.85;}
+  .cta{font-family:{{mono}};font-size:28px;color:{{accent}};}
+  .handle{font-family:{{mono}};font-size:26px;color:{{muted}};}
 </style></head>
 <body>
   <div id="canvas">

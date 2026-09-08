@@ -1,19 +1,26 @@
 <!doctype html>
 <!--
-  TEMPLATE SKELETON — copie pra templates/<id>.html e edite.
-  Regras:
-  - {{baseStyles}} injeta reset + camadas de fundo + padrões + helpers (.hl, .ic). Sempre inclua.
-  - Deve existir UM elemento #canvas com o tamanho-alvo (define o que é exportado) e com
-    position:relative + isolation:isolate + overflow:hidden (pras camadas de fundo funcionarem).
-    Tamanhos: 1080x1080 (post), 1080x1920 (story), 1080x1350 (carrossel), 1200x630 (capa/OG).
-  - As 3 divs de fundo (ordem importa): .bg-photo -> .bg-overlay -> .bg-pattern {{patternClass}}.
-  - Tokens da marca: {{bg}} {{surface}} {{text}} {{muted}} {{accent}} {{display}} {{mono}}
-                     {{googleFonts}} {{logoText}} {{handle}} {{name}}
-    Tokens de conteúdo (do `data`): {{titulo}} {{kicker}} {{cta}} {{topright}}... (crie os que quiser)
-  - Texto aceita HTML inline: use <span class="hl">palavra</span> (helper do base.css) pra destaque.
-  - Ícones: {{icon:shield}} (Lucide) ou {{icon:custom/nome}} (assets/custom). Dê tamanho ao container.
-  - Imagem de fundo: data.bgimage (local/URL). Padrão de fundo: data.pattern (grid|dots|scanlines|mesh|hatch|noise|none).
-  - Arquivos começando com "_" são ignorados por list_templates.
+  TEMPLATE SKELETON — copy to templates/<id>.html (framework, generic) or
+  user/canva-killer/templates/<brandId>/<id>.html (exclusive to one brand) and edit.
+  Rules:
+  - {{baseStyles}} injects reset + background layers + patterns + helpers (.hl, .ic). Always include it.
+  - Exactly ONE #canvas element at the target size (defines what gets exported), with
+    position:relative + isolation:isolate + overflow:hidden (so the background layers work).
+    Sizes: 1080x1080 (post), 1080x1920 (story), 1080x1350 (carousel), 1200x630 (cover/OG).
+  - The 3 background divs (order matters): .bg-photo -> .bg-overlay -> .bg-pattern {{patternClass}}.
+  - Brand tokens: {{bg}} {{surface}} {{text}} {{muted}} {{accent}} {{accent2}} {{gradient}}
+                  {{display}} {{mono}} and any fonts.* key as {{font:key}} (e.g. {{font:body}}, {{font:cta}})
+                  {{googleFonts}} {{logoText}} {{logoSvg}} {{handle}} {{name}}
+                  (+ any top-level scalar of the brand JSON, e.g. {{tagline}})
+    Content tokens (from `data`): {{titulo}} {{kicker}} {{cta}} {{topright}}... (create the ones you need)
+  - Text accepts inline HTML: use <span class="hl">word</span> (base.css helper) to highlight.
+  - Icons: {{icon:shield}} (Lucide) or {{icon:custom/name}} (assets/custom). Size the container.
+  - Images: full-bleed photo = data.bgimage (local path/URL) on .bg-photo. Per-post image slot =
+    background-image:url('{{img:hero}}') filled by data.hero (any slot name works).
+  - Background pattern: data.pattern (none|grid|dots|scanlines|mesh|hatch|noise); default none.
+  - Brand font files in user/canva-killer/fonts/<brandId>/ are injected automatically via {{baseStyles}}.
+  - Palette variant: data.variant = a key of the brand's `variants` (e.g. "light").
+  - Files starting with "_" are ignored by list_templates.
 -->
 <html lang="pt-br">
 <head>
@@ -23,7 +30,7 @@
   {{baseStyles}}
 
   #canvas {
-    width: 1080px; height: 1080px;    /* <- ajuste pro tamanho do seu layout */
+    width: 1080px; height: 1080px;    /* <- set to your layout size */
     position: relative; isolation: isolate; overflow: hidden;
     background: {{bg}}; color: {{text}}; font-family: {{display}};
     padding: 96px; display: flex; flex-direction: column; justify-content: space-between;

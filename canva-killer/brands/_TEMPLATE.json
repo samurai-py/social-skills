@@ -3,6 +3,8 @@
   "name": "My Brand",
   "handle": "@mybrand",
   "logoText": "MY.BRAND",
+  "pattern": "none",
+  "genericTemplates": false,
   "palette": {
     "bg": "#111111",
     "surface": "#222222",
@@ -12,6 +14,24 @@
   },
   "fonts": {
     "display": "system-ui, sans-serif",
-    "mono": "ui-monospace, monospace"
+    "mono": "ui-monospace, monospace",
+    "body": "system-ui, sans-serif",
+    "files": [
+      {
+        "family": "My Display",
+        "src": "MyDisplay-Bold.woff2",
+        "weight": 700
+      }
+    ]
+  },
+  "gradient": "linear-gradient(95deg, #00ffff, #ffffff)",
+  "variants": {
+    "light": {
+      "bg": "#f4f4f0",
+      "surface": "#ffffff",
+      "text": "#111111",
+      "muted": "#666666",
+      "accent": "#007c7c"
+    }
   }
 }

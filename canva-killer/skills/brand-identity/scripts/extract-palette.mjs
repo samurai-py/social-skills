@@ -1,150 +1,146 @@
 #!/usr/bin/env node
-// brand-identity skill helper — deterministic dominant-color extraction from a reference image.
-// Histogram-based (quantize to 16 levels/channel, count buckets): cheap, dependency-light
-// approximation of k-means clustering. Deterministic, so re-running on the same image always
-// gives the same swatches — unlike eyeballing hex codes from a screenshot by inspection alone.
+// brand-identity skill helper — deterministic palette extraction from one or MORE reference images.
 //
-// Usage: node extract-palette.mjs <image-path> [topN=12]
-// Output: JSON on stdout — { swatches: [...], suggested: { bg, text, surface, muted, accent, accent2 } }
-// `suggested` is a heuristic starting point (frequency = area, saturation = likely accent),
-// NOT a final answer — the calling skill must sanity-check it against the reference image
-// visually (does "accent" actually look like the brand's highlight color?) before writing brand.json.
+//   node extract-palette.mjs <image> [<image> ...] [--sheet out.png] [--json out.json]
+//
+// What it does (all deterministic, no eyeballing):
+//   1. Clusters colors perceptually (OKLab) per image, then reconciles across images: a color that
+//      recurs in several references is the brand's color; a one-off is content noise.
+//   2. Detects the background from the outer border ring (not "most frequent pixel", which a photo
+//      hijacks), and flags photo-like references whose edges are busy.
+//   3. Assigns roles: bg / surface / text / muted / accent / accent2 — with WCAG contrast checks.
+//      A role that no real cluster can fill is DERIVED (mixed from bg/text) and listed under
+//      `derived`, so the agent knows which values are measured and which are fallbacks.
+//   4. Optionally renders a contact sheet PNG (--sheet): the references next to the role swatches
+//      and every cluster with its share. Look at that image — it's the fastest sanity check.
+//
+// `roles` is a strong starting point, not gospel: confirm accent is the CTA/logo color and not an
+// incidental object, and prefer references that are brand material (site, banner, guideline page).
 
-import { Jimp } from 'jimp';
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  loadImage, toDataUri, pixels, clusterColors, mergeAcross, detectBackground,
+  contrast, deltaE, hueDiff, mix, hex, oklab, shotHtml, SHEET_CSS, parseArgs,
+} from './_lib.mjs';
 
-const [, , imagePath, topNArg] = process.argv;
-if (!imagePath) {
-  console.error('Usage: node extract-palette.mjs <image-path> [topN=12]');
+const { pos: files, opts } = parseArgs(process.argv.slice(2));
+if (!files.length) {
+  console.error('Usage: node extract-palette.mjs <image> [<image> ...] [--sheet out.png] [--json out.json]');
   process.exit(1);
 }
-const topN = Number(topNArg) || 12;
 
-function rgbToHex(r, g, b) {
-  return '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
-}
-// WCAG-ish relative luminance, 0 (black) .. 1 (white) — used to pick bg/text as a contrasting pair.
-function luminance(r, g, b) {
-  const [R, G, B] = [r, g, b].map((v) => v / 255);
-  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
-}
-// HSL saturation, 0 (gray) .. 1 (vivid) — used to tell an "accent" (vivid, used sparingly) apart
-// from bg/surface/muted (large flat areas, usually low-saturation neutrals). DEGENERATE NEAR THE
-// EXTREMES: a near-white pixel with a tiny 15/255 channel residue (JPEG noise, antialiasing edge)
-// can score saturation ~1.0 because the formula's denominator (2-max-min or max+min) shrinks
-// right along with the residue — mathematically "saturated" but perceptually colorless. Caught
-// this by testing on a real photo: near-white antialiasing pixels outranked the actual orange
-// logo. `chroma()` below is the guard — it stays near 0 for those pixels because it's an
-// absolute, not relative, measure.
-function saturation(r, g, b) {
-  const max = Math.max(r, g, b) / 255, min = Math.min(r, g, b) / 255;
-  if (max === min) return 0;
-  const l = (max + min) / 2;
-  const d = max - min;
-  return l > 0.5 ? d / (2 - max - min) : d / (max + min);
-}
-// Absolute chroma (max-min channel, 0..255) — doesn't blow up near white/black like HSL
-// saturation does, so it's the gate that actually separates "genuinely colorful" from
-// "technically saturated by the formula but visually gray/white/black".
-function chroma(r, g, b) {
-  return Math.max(r, g, b) - Math.min(r, g, b);
-}
-// Hue angle 0-360deg — used only to keep accent2 a genuinely different color from accent
-// (without this, quantization neighbors of the same color, e.g. #f06010 and #f07010, both rank
-// near the top of vividOutliers and accent2 ends up as a clone of accent instead of the
-// design's actual secondary highlight).
-function hue(r, g, b) {
-  const [R, G, B] = [r, g, b].map((v) => v / 255);
-  const max = Math.max(R, G, B), min = Math.min(R, G, B), d = max - min;
-  if (d === 0) return 0;
-  let h;
-  if (max === R) h = ((G - B) / d) % 6;
-  else if (max === G) h = (B - R) / d + 2;
-  else h = (R - G) / d + 4;
-  h *= 60;
-  return h < 0 ? h + 360 : h;
-}
-function hueOf(hex) {
-  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-  return hue(r, g, b);
-}
-function hueDiff(h1, h2) {
-  const d = Math.abs(h1 - h2) % 360;
-  return d > 180 ? 360 - d : d;
+const warnings = [], derived = [];
+const imgs = [];
+for (const f of files) {
+  if (!fs.existsSync(f)) { console.error(`not found: ${f}`); process.exit(1); }
+  imgs.push(await loadImage(f, 420)); // 420px: small UI text (a red label on a site screenshot) survives the downscale
 }
 
-const image = await Jimp.read(imagePath);
-image.resize({ w: 120, h: 120 }); // downscale: enough signal for dominant colors, fast to bucket
-const { data } = image.bitmap;
+// per-image clusters + background votes
+const perImage = imgs.map((im) => ({ ...im, clusters: clusterColors(pixels(im.small)), bg: detectBackground(im.small) }));
+const clusters = mergeAcross(perImage.map((p) => p.clusters));
+perImage.forEach((p) => { if (p.bg.photoLike) warnings.push(`${path.basename(p.file)}: busy edges (photo/gradient) — its background vote is weak; prefer a flat brand surface as reference.`); });
 
-const STEP = 16; // quantization step per channel (256/16 = 16 buckets/channel, 4096 total)
-const buckets = new Map();
-for (let i = 0; i < data.length; i += 4) {
-  if (data[i + 3] < 128) continue; // skip transparent pixels
-  const r = Math.round(data[i] / STEP) * STEP;
-  const g = Math.round(data[i + 1] / STEP) * STEP;
-  const b = Math.round(data[i + 2] / STEP) * STEP;
-  const key = `${r},${g},${b}`;
-  buckets.set(key, (buckets.get(key) || 0) + 1);
+// ---- bg: the border-ring winner shared by most images (weighted by ring share) ----
+const bgVotes = [];
+for (const p of perImage) {
+  if (!p.bg.cluster) continue;
+  const v = bgVotes.find((x) => deltaE(x.lab, p.bg.cluster.lab) < 0.08);
+  if (v) { v.score += p.bg.share; v.n++; } else bgVotes.push({ ...p.bg.cluster, score: p.bg.share, n: 1 });
+}
+bgVotes.sort((a, b) => b.score - a.score);
+const bg = bgVotes[0] || clusters[0];
+const isDark = bg.L < 0.5;
+const near = (c, ref, d) => deltaE(c.lab, ref.lab) < d;
+
+// ---- text: best-contrast low-chroma cluster with real presence; else derived ----
+const textCands = clusters.filter((c) => c.weight >= 0.004 && c.chroma < 0.12 && !near(c, bg, 0.15));
+let text = textCands.sort((a, b) => contrast(b.rgb, bg.rgb) - contrast(a.rgb, bg.rgb))[0];
+if (!text || contrast(text.rgb, bg.rgb) < 4.5) {
+  const rgb = isDark ? [242, 242, 238] : [17, 17, 17];
+  if (text) warnings.push(`text candidate ${text.hex} only reaches ${contrast(text.rgb, bg.rgb).toFixed(1)}:1 on bg — replaced by a derived value.`);
+  text = { hex: hex(...rgb), rgb, lab: oklab(...rgb), chroma: 0, weight: 0, derivedFrom: 'bg luminance' };
+  derived.push('text');
 }
 
-const total = [...buckets.values()].reduce((a, b) => a + b, 0) || 1;
-const all = [...buckets.entries()].map(([key, count]) => {
-  const [r, g, b] = key.split(',').map(Number);
-  return {
-    hex: rgbToHex(r, g, b),
-    frequencyPct: +((count / total) * 100).toFixed(2),
-    luminance: +luminance(r, g, b).toFixed(3),
-    saturation: +saturation(r, g, b).toFixed(3),
-    chroma: chroma(r, g, b),
-  };
-});
+// ---- surface: a low-chroma neighbor of bg (card/panel tone); else derived ----
+let surface = clusters.find((c) => c.weight >= 0.015 && c.chroma < 0.08 && !near(c, bg, 0.035) && deltaE(c.lab, bg.lab) < 0.22
+  && !near(c, text, 0.15));
+if (!surface) {
+  const rgb = mix(bg.rgb, isDark ? [255, 255, 255] : [0, 0, 0], 0.06).map(Math.round);
+  surface = { hex: hex(...rgb), rgb, lab: oklab(...rgb), weight: 0, derivedFrom: 'bg ±6%' };
+  derived.push('surface');
+}
 
-// `swatches` = by AREA (frequency) — right signal for bg/surface/muted, which are genuinely
-// large flat regions. Sliced to topN.
-const swatches = [...all].sort((a, b) => b.frequencyPct - a.frequencyPct).slice(0, topN);
+// ---- accent / accent2: vivid clusters anywhere in the image, ranked by chroma then weight ----
+const vch = (c) => (c.peak ? Math.max(c.chroma, c.peak.chroma) : c.chroma);
+const score = (c) => vch(c) * Math.log1p(c.weight * 400) * (c.images / imgs.length) ** 2;
+const vivid = clusters.filter((c) => vch(c) >= 0.09 && c.weight >= 0.0005 && !near(c, bg, 0.1) && !near(c, text, 0.1)
+  && contrast(c.rgb, bg.rgb) >= 1.4)
+  .sort((a, b) => score(b) - score(a));
+// a vivid color seen in only SOME references when others exist is content, not brand — demoted
+// unless nothing recurring is vivid (that's the `warnings` case below)
+if (imgs.length > 1 && vivid.some((c) => c.images === imgs.length)) {
+  const dropped = vivid.filter((c) => c.images < imgs.length);
+  if (dropped.length) warnings.push(`ignored one-off vivid colors (in fewer than all references): ${dropped.slice(0, 3).map((c) => (c.peak || c).hex).join(', ')}.`);
+}
+const vividAll = imgs.length > 1 && vivid.some((c) => c.images === imgs.length) ? vivid.filter((c) => c.images === imgs.length) : vivid;
+const asPeak = (c) => (c && c.peak && c.peak.chroma > c.chroma * 1.15 ? { ...c, hex: c.peak.hex, rgb: c.peak.rgb, lab: c.peak.lab, chroma: c.peak.chroma, meanHex: c.hex } : c);
+let accent = asPeak(vividAll[0]);
+if (!accent) {
+  const fallback = clusters.filter((c) => !near(c, bg, 0.1) && !near(c, text, 0.1)).sort((a, b) => b.chroma - a.chroma)[0];
+  accent = fallback || text;
+  warnings.push('no vivid color found — accent is the most colorful cluster available; the brand may genuinely be monochrome (set accent by hand).');
+}
+const accent2 = asPeak(vividAll.find((c) => (c.peak ? c.peak.hex : c.hex) !== accent.hex && hueDiff(c.hue, accent.hue) > 35)) || null;
+if (accent2 && accent2.weight >= 0.008 && accent.weight >= 0.008) {
+  warnings.push(`accent ${accent.hex} and accent2 ${accent2.hex} both cover real area — check the reference for a gradient/duo-tone (brand.gradient).`);
+}
 
-// `vividOutliers` = by SATURATION across the FULL pixel population, not just the top-N by area.
-// A brand's real accent (a logo mark, a small badge, a CTA button) is very often a tiny fraction
-// of total area and gets discarded by a frequency cutoff before saturation is ever considered —
-// that's a real failure mode this script had: a small vivid logo lost to a frequency slice,
-// while a duller but larger UI-chrome color won "most saturated of the top N" by default.
-// Floor of 0.05% filters single-pixel/antialiasing-count noise; `chroma >= 60` filters the
-// near-white/near-black pixels where HSL saturation degenerates (see saturation() above) —
-// without it, JPEG noise on a white background outranks a real orange logo. Anything past both
-// gates stays in the pool regardless of frequency rank, so a 2%-of-image logo mark still surfaces.
-// Ranked by CHROMA first, not HSL saturation: saturation formula hits its 1.0 ceiling whenever
-// any channel is exactly 0 regardless of how vivid the color actually is (confirmed on this same
-// image — several petrol/navy blues scored a flat saturation=1 and outranked a much more vivid
-// orange with saturation=0.88 but nearly 2x the chroma). Chroma has no such ceiling artifact.
-const vividOutliers = all
-  .filter((s) => s.saturation > 0.5 && s.chroma >= 60 && s.frequencyPct >= 0.05)
-  .sort((a, b) => b.chroma - a.chroma || b.frequencyPct - a.frequencyPct)
-  .slice(0, 8);
+// ---- muted: low-chroma mid-contrast cluster; else derived mix ----
+let muted = clusters.find((c) => c.weight >= 0.004 && c.chroma < 0.08 && !near(c, bg, 0.12) && !near(c, surface, 0.06)
+  && !near(c, text, 0.12) && contrast(c.rgb, bg.rgb) >= 2.2 && contrast(c.rgb, bg.rgb) <= 7);
+if (!muted) {
+  const rgb = mix(text.rgb, bg.rgb, 0.45).map(Math.round);
+  muted = { hex: hex(...rgb), rgb, lab: oklab(...rgb), weight: 0, derivedFrom: 'text↔bg 45%' };
+  derived.push('muted');
+}
 
-const bg = swatches[0];
-// text: the swatch with the widest luminance gap vs bg (max contrast candidate)
-const text = [...swatches].sort((a, b) => Math.abs(b.luminance - bg.luminance) - Math.abs(a.luminance - bg.luminance))[0];
-// surface: next most frequent neutral close in luminance to bg (a card/panel tone), else 2nd most frequent
-const surface = swatches.find((s) => s.hex !== bg.hex && Math.abs(s.luminance - bg.luminance) < 0.25) || swatches[1] || bg;
-// muted: mid-saturation swatch, sorted ascending by saturation and taking the middle one
-const bySat = [...swatches].sort((a, b) => a.saturation - b.saturation);
-const muted = bySat[Math.floor(bySat.length / 2)] || bg;
-// accent/accent2: prefer a vivid outlier (small-area brand mark) over the top-N-by-area pool —
-// fall back to "most saturated of the top N" only if nothing vivid was found anywhere.
-const vividPool = vividOutliers.length
-  ? vividOutliers.filter((s) => s.hex !== bg.hex && s.hex !== text.hex)
-  : [...swatches].filter((s) => s.hex !== bg.hex && s.hex !== text.hex).sort((a, b) => b.saturation - a.saturation);
-const accent = vividPool[0] || swatches[swatches.length - 1] || bg;
-// accent2 must differ in HUE (>40deg), not just hex — otherwise a quantization neighbor of the
-// same color (e.g. #f06010 vs #f07010) wins by frequency/chroma tiebreak and accent2 ends up a
-// near-duplicate of accent instead of the design's actual secondary color.
-const accentHue = hueOf(accent.hex);
-const accent2 = vividPool.find((s) => s.hex !== accent.hex && hueDiff(hueOf(s.hex), accentHue) > 40)
-  || vividPool.find((s) => s.hex !== accent.hex)
-  || accent;
+const ratio = (a, b) => +contrast(a.rgb, b.rgb).toFixed(2);
+const roles = { bg: bg.hex, surface: surface.hex, text: text.hex, muted: muted.hex, accent: accent.hex, ...(accent2 ? { accent2: accent2.hex } : {}) };
+// how much of the image each role actually covers (0 = derived) — compare.mjs uses it to ignore
+// a role that is basically absent from a reference (a 0.05% red pixel blob is not "the accent")
+const roleShare = Object.fromEntries([['bg', bg], ['surface', surface], ['text', text], ['muted', muted], ['accent', accent], ...(accent2 ? [['accent2', accent2]] : [])]
+  .map(([k, c]) => [k, +((c.weight || 0) * 100).toFixed(3)]));
+const checks = {
+  textOnBg: ratio(text, bg), mutedOnBg: ratio(muted, bg), accentOnBg: ratio(accent, bg),
+  ...(accent2 ? { accent2OnBg: ratio(accent2, bg) } : {}),
+};
+if (checks.accentOnBg < 3) warnings.push(`accent ${accent.hex} has ${checks.accentOnBg}:1 on bg — fine for fills, weak for accent TEXT (kicker/CTA). Consider a lighter/darker variant for text use.`);
+if (clusters.length && clusters[0].weight < 0.25 && imgs.length === 1) warnings.push('no dominant flat area in the single reference — likely a photo; add a screenshot of the site/logo lockup for a reliable palette.');
 
-console.log(JSON.stringify({
-  swatches,
-  vividOutliers,
-  suggested: { bg: bg.hex, text: text.hex, surface: surface.hex, muted: muted.hex, accent: accent.hex, accent2: accent2.hex },
-}, null, 2));
+const result = {
+  images: imgs.map((i) => ({ file: i.file, size: `${i.W}x${i.H}` })),
+  roles,
+  roleShare,
+  derived,
+  contrast: checks,
+  warnings,
+  clusters: clusters.slice(0, 16).map((c) => ({ hex: c.hex, ...(c.peak && c.peak.hex !== c.hex ? { peak: c.peak.hex } : {}), sharePct: +(c.weight * 100).toFixed(2), images: c.images, L: +c.L.toFixed(3), chroma: +c.chroma.toFixed(3), hue: Math.round(c.hue) })),
+  brandJsonPalette: roles,
+};
+
+if (opts.sheet) {
+  const thumbs = await Promise.all(imgs.map((i) => toDataUri(i.im, 420)));
+  const sw = (label, hx, meta = '') => `<div class="sw"><div class="c" style="background:${hx}"></div><div class="t"><div class="role">${label}</div><div>${hx}</div><div class="m">${meta}</div></div></div>`;
+  const html = `<!doctype html><meta charset="utf-8"><style>${SHEET_CSS}</style><div id="sheet">
+    <h2>references</h2><div class="row">${thumbs.map((t, i) => `<div><img class="thumb" src="${t}"><div class="m" style="margin-top:4px">${path.basename(imgs[i].file)} · ${imgs[i].W}×${imgs[i].H}</div></div>`).join('')}</div>
+    <h2>roles</h2><div class="row">${Object.entries(roles).map(([k, v]) => sw(k + (derived.includes(k) ? ' (derived)' : ''), v, k === 'text' ? `${checks.textOnBg}:1 on bg` : k === 'accent' ? `${checks.accentOnBg}:1 on bg` : k === 'muted' ? `${checks.mutedOnBg}:1 on bg` : '')).join('')}</div>
+    <h2>clusters (share · in N images)</h2><div class="row">${result.clusters.map((c) => sw('', c.hex, `${c.sharePct}% · ${c.images}/${imgs.length} img · C ${c.chroma}`)).join('')}</div>
+    ${warnings.length ? `<h2>warnings</h2>${warnings.map((w) => `<div class="warn">⚠ ${w}</div>`).join('')}` : ''}
+  </div>`;
+  result.sheet = await shotHtml(html, opts.sheet, { width: 1400, height: 900 });
+}
+if (opts.json) fs.writeFileSync(opts.json, JSON.stringify(result, null, 2));
+console.log(JSON.stringify(result, null, 2));

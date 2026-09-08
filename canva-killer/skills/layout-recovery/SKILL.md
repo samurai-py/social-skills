@@ -22,16 +22,31 @@ graph TD
 ```
 
 ### 1. Grid Mapping & Measurement
-Before writing any code, analyze the reference image and define the grid structure:
-- **Canvas Size**: Identify the aspect ratio. Standard Canva Killer dimensions:
-  - Square: `1080 x 1080`
-  - Portrait Slide: `1080 x 1350`
-  - Story: `1080 x 1920`
-  - Blog Cover: `1200 x 630`
-- **Coordinate Grid**: Map the elements in pixels relative to the canvas size:
-  - Estimate the bounding boxes `(left, top, width, height)` of titles, kickers, images, and CTA blocks.
-  - Estimate font sizes, line heights, and margins/paddings.
-  - Identify background styles (colors, pattern types, overlays).
+Measure the reference before writing a line of CSS — vision models are good at *what* is in an
+image and bad at *where exactly* it is in pixels. Run:
+
+```bash
+node canva-killer/skills/layout-recovery/scripts/measure-layout.mjs <reference.png> \
+  --overlay /tmp/ref-grid.png [--canvas 1080x1350]
+```
+
+It prints and draws:
+- **Canvas**: reference size, aspect, the nearest standard format (`post 1080x1080`,
+  `portrait 1080x1350`, `story 1080x1920`, `cover 1200x630`) and `scaleToCanvas` (reference px →
+  canvas px). Pass `--canvas` to force a target.
+- **Background** (border-ring color, `photoLike` flag) and the **content bbox → real margins**
+  in px and %. Use those margins as `#canvas` padding instead of guessing.
+- **Blocks**: rows of content split by whitespace, each with bbox (`px`, `pct`, and already
+  scaled to `canvas`), dominant color, and for text an estimated `lines` / `linePitchPx` /
+  `fontSizePx` (+ `fontSizeCanvas`). Adjacent text blocks with the same color and left edge are
+  usually one paragraph whose lines were split — merge them mentally.
+- **`--overlay`**: the reference with a labeled 10% grid and numbered block boxes. **Read
+  positions off this image**, then write the template from the numbers — not from the raw
+  reference.
+
+Font-size estimates come from line pitch (÷1.15) or glyph-box height (÷0.9); treat them as ±10%
+and confirm in step 4. On a photo-heavy reference the block list is unreliable where the photo
+is — the grid overlay still gives you the geometry.
 
 ### 2. Component Scaffolding
 - **Custom Icons & Backgrounds**: If the reference has specific vector decorations (e.g. borders, curves, grids), use the `svg-builder` skill to generate them and save to `user/canva-killer/assets/custom/`.
@@ -47,6 +62,10 @@ Before writing any code, analyze the reference image and define the grid structu
 - Embed all static SVG assets or layouts.
 - Use tokens like `{{display}}`, `{{mono}}`, `{{accent}}`, `{{surface}}`, and `{{text}}` to ensure the layout remains brand-agnostic.
 - Inject text variables like `{{titulo}}`, `{{kicker}}`, `{{cta}}` to allow Compose form substitution.
+- Image slots the agent fills per post: `background-image:url('{{img:hero}}')` — `data.hero`
+  (local path or URL) resolves at render time. `{{gradient}}` gives the brand's duo gradient
+  (or `accent → accent2` when the brand doesn't declare one); `data.variant` swaps to a brand
+  `variants.<name>` palette (e.g. a light version of the same layout).
 - Make the template **code-only** (do NOT include the visual editor `<script type="application/json" data-ck-model>` block) if it features complex custom SVG borders, terminal windows, or dynamic scripting. This prevents visual editor saves from stripping your custom markup.
 
 **Height**: prefer `#canvas{height:auto}` with content in normal document flow over a guessed
@@ -63,10 +82,17 @@ Do not assume the template looks correct on the first try. You must run a valida
    ```bash
    node src/render.mjs --brand <brand-id> --template <template-name> --data <data-json-path>
    ```
-2. **Visual Contrast & Diff**: Inspect the output PNG inside `user/canva-killer/out/` and compare it side-by-side with the original user-uploaded reference image:
-   - Are the margins aligned?
-   - Is the text scaling correctly without clipping?
-   - Do the colors and SVG strokes match?
+2. **Measured diff**, then visual diff:
+   ```bash
+   node canva-killer/skills/brand-identity/scripts/compare.mjs <reference.png> <render.png> --out /tmp/cmp.png
+   ```
+   `geometryScore` covers aspect ratio, margin drift (%), and block-count difference;
+   `paletteScore` covers the colors; `verdict` names what's off. Then open the `--out` sheet
+   (reference and render side by side, same height) and check what metrics can't:
+   - Are the margins aligned? Is the text scaling correctly without clipping?
+   - Do the colors and SVG strokes match? Is the type hierarchy (title > kicker > body) preserved?
+   You can also run `measure-layout.mjs --overlay` on the RENDER and compare block bboxes with the
+   reference's, number by number.
 3. **Iterative Adjustments**: Edit the HTML template coordinate styles, run the render command again, and re-check. Repeat this loop until the visual diff is minimized and the layout matches the reference.
 
 ## See also

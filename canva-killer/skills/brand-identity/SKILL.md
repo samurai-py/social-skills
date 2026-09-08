@@ -36,72 +36,102 @@ graph TD
     D --> E["5. Background pattern"]
     E --> F["6. Write brand.json"]
     F --> G["7. Closed-loop visual QA"]
+    G --> H["8. The brand's own templates"]
 ```
 
-### 1. Gather reference images
-Ask for (or use what was already shared): a real post/ad, a screenshot of their site/app, a
-business card, a brand guideline PDF page. More surfaces = more reliable palette (a single busy
-photo is a worse source than a clean logo lockup or a solid-color banner). If the only image
-available is content-heavy and not itself brand material (e.g. a generic stock-photo ad), say so
-and ask whether it's actually representative — don't silently treat photo noise as brand color.
+### 1. Gather reference images — and ASK for the logo file
+Ask for (or use what was already shared):
+- **Reference images**: a real post/ad, a screenshot of their site/app, a business card, a brand
+  guideline page. More surfaces = more reliable palette (a single busy photo is a worse source
+  than a clean logo lockup or a solid-color banner). If the only image is content-heavy and not
+  itself brand material, say so and ask whether it's representative.
+- **The logo as a FILE** (SVG ideally; PNG with transparency is fine). Every brand has one — ask
+  before trying anything clever. Step 4 explains what to do with it and what the fallback is when
+  the user genuinely has nothing but a print.
+
+Treat the whole job as an outside agency would: the prints and files the user hands you are the
+only source. Don't go digging in a repository or site source for CSS variables and font files —
+even when you technically could — unless the user tells you to use it.
 
 ### 2. Extract & assign palette
-Don't eyeball hex codes directly from the image — run the deterministic extractor first, then
-reason over its output:
+Don't eyeball hex codes from the image — measure, then reason over the measurement. Feed the
+extractor **every** reference you have at once (it reconciles across them) and ask for the sheet:
 
 ```bash
-node canva-killer/skills/brand-identity/scripts/extract-palette.mjs <image-path> [topN=12]
+node canva-killer/skills/brand-identity/scripts/extract-palette.mjs ref1.png ref2.jpg site.png \
+  --sheet /tmp/palette-sheet.png
 ```
 
-Returns `{ swatches: [...by area], vividOutliers: [...by colorfulness, any area], suggested:
-{bg, text, surface, muted, accent, accent2} }`. `swatches` is ranked by how much area each color
-covers (right signal for bg/surface/muted — those are genuinely large flat regions).
-`vividOutliers` is ranked by colorfulness **across the whole image, regardless of area** — a
-brand's real accent (logo mark, small badge, CTA button) is very often a tiny fraction of total
-area, so `accent`/`accent2` are picked from here, not from `swatches`.
+Then **look at the sheet PNG** (references + role swatches + all clusters with their share). The
+JSON has:
+- `roles` — `{bg, surface, text, muted, accent, accent2?}`, ready to paste into `palette`.
+- `derived` — roles no real cluster could fill, so they were *computed* (e.g. `surface` = bg ±6%,
+  `text` = white/black by bg luminance). Measured roles are trustworthy; derived ones are
+  placeholders you should confirm against the brand's actual material or leave as sane defaults.
+- `contrast` — WCAG ratios (`textOnBg`, `accentOnBg`, ...). Text below 4.5:1 is auto-replaced;
+  accent below 3:1 gets a warning (fine for fills, weak for kicker/CTA text).
+- `warnings` — photo-like edges, monochrome brand, possible gradient/duo-tone, weak accent text.
+- `clusters` — every color with `sharePct` and `images` (in how many references it recurs). A
+  color present in 3/3 references is the brand; one present in 1/3 is content.
 
-`suggested` is a **heuristic starting point**, always sanity-check it against the actual image:
-- Does `accent` look like the color they use for CTAs/highlights/logo, not an incidental object
-  in a photo (e.g. a person's red shirt)?
-- Is `text` actually legible on `bg` (it's derived from luminance contrast, but confirm visually)?
-- Run the script on more than one reference image if available and reconcile — the color that
-  repeats across sources is the real brand color; a one-off is noise.
-- `accent2` is optional (only set it if the brand genuinely uses a second highlight color, e.g. a
-  gradient or a two-tone CTA) — otherwise drop it and let the render default to `accent`.
+How it decides (so you can tell when it's wrong): background = dominant color of the outer border
+ring (a photo in the middle can't hijack it); accent = most *chromatic* cluster anywhere in the
+image (a 0.3% logo mark still wins over a dull 10% UI chrome), boosted when it recurs across
+references; accent2 must differ from accent by >35° of hue. Colors are clustered in OKLab, so
+antialiasing/JPEG neighbors merge into one swatch instead of fragmenting.
 
-**Lesson from calibrating this script against a real job-post image** (small orange logo/badge
-on a white-and-navy card): the first version ranked accent candidates by area first, so the
-small-but-real orange logo never made the cut — a larger, duller UI-chrome blue won by default.
-Fixed by scoring `vividOutliers` on colorfulness over the *entire* pixel population, not just the
-top-N-by-area swatches. A second bug surfaced right after: HSL saturation hits its 1.0 ceiling
-whenever any RGB channel is exactly 0, regardless of how vivid the color actually looks — several
-dull petrol blues scored a flat `saturation: 1` and outranked the real orange (`saturation:
-0.88`, but nearly 2x the *absolute* chroma). Fixed by ranking on chroma (`max(r,g,b)-min(r,g,b)`,
-no ceiling artifact) instead of HSL saturation. If a future image produces a clearly-wrong
-`accent`, check whether it's one of these two failure modes before assuming the image itself is
-the problem.
+Sanity checks that are still yours to make:
+- Is `accent` the color of their CTAs/highlights/logo — not a person's shirt in a photo? If a
+  reference is a busy photo, the JSON says so (`busy edges`); add a screenshot of the site or a
+  logo lockup and rerun.
+- If the warning mentions gradient/duo-tone and the reference really uses one, set
+  `brand.gradient` (see step 6) and keep `accent2`; otherwise drop `accent2`.
+- A brand can legitimately be monochrome; then `accent` is whatever is most colorful and the
+  warning tells you to set it by hand (often = text).
 
-### 3. Fonts — delegate to `font-builder`
-Follow [`../font-builder/SKILL.md`](../font-builder/SKILL.md) steps 1–2 (visual identification +
-Google Fonts mapping) against the same reference images. Don't re-derive the font-matching table
-here — it already lives in that skill.
+### 3. Fonts — ask for the files, then match the rest
+1. **Ask for the brand's font files** (`.woff2`/`.ttf`/`.otf`) the same way you ask for the logo.
+   Drop them in `user/canva-killer/fonts/<id>/` named `<Family Name>-<weight>[-italic].woff2`
+   (the person can also upload them in the studio's Brand tab, which shows every role with a
+   live sample — point them there when they'd rather pick fonts by eye)
+   (e.g. `Montserrat-300.woff2`, `My Serif-700.otf`) — they become `@font-face` rules in every
+   render and in the studio automatically, and that family is no longer fetched from Google.
+   This is the only path to real fidelity; a Google stand-in is always an approximation.
+2. For fonts the user can't supply, follow [`../font-builder/SKILL.md`](../font-builder/SKILL.md)
+   steps 1–2 (visual identification → Google Fonts stand-in). Say which fonts are stand-ins in
+   the brand JSON `_source` so nobody mistakes them for the real thing.
+3. Name font roles after their job in `fonts` (`display`, `mono`, `body`, `kicker`, `cta`…) and
+   use them in templates as `{{font:<role>}}`. Note the **weight**, not just the family — a light
+   300 kicker rendered at 400 reads as a different brand (this exact miss happened on a real
+   test). Google stand-ins load 300/400/500/600/700 where the family has them.
 
-### 4. Logo & marks — delegate to `svg-builder`
-- If a clean vector/transparent logo exists (brand site, press kit), fetch and save it to
-  `user/canva-killer/assets/custom/<id>/logo.svg` (brand-scoped, `<id>` matching this brand's
-  `id`), reference it as `"logo": "custom/logo"`.
-- If only a raster logo is visible in a reference image (e.g. embossed on a photo) and no clean
-  source is found, follow [`../svg-builder/SKILL.md`](../svg-builder/SKILL.md) to hand-trace a
-  clean vector version — only if it's simple/geometric enough (svg-builder's own honesty limit
-  applies: don't attempt a full illustrative trace).
-- If neither works, fall back to `"logoText"` (clean uppercase wordmark) — don't block the rest
-  of the pipeline on a missing logo.
+### 4. Logo & marks
+Three cases, in order of preference:
+1. **User supplied a file** (the normal case). SVG: save it to
+   `user/canva-killer/assets/custom/<id>/logo.svg` (brand-scoped, `<id>` = this brand's `id`),
+   swap hard-coded fills for `currentColor` so it recolors with `{{text}}`/`{{accent}}`, and set
+   `"logo": "custom/logo"`. A two-color logo (e.g. green + cyan strokes) may keep its colors —
+   then it simply ignores the container color. Extra marks (emblem, mascot, seal) go in the same
+   folder and are used as `{{icon:custom/<name>}}`. PNG only: wrap it in an `<svg><image …/></svg>`
+   (see `scripts/cut-logo.mjs` for the mask trick that makes even a raster recolorable).
+2. **No file, but the logo is clean and geometric** in a reference: hand-trace it with
+   [`../svg-builder/SKILL.md`](../svg-builder/SKILL.md) (its honesty limit applies — no
+   illustrative traces, no blackletter, no lettering).
+3. **No file, complex logo** (lettering, blackletter, illustration): cut it out of the sharpest
+   print instead of guessing —
+   ```bash
+   node canva-killer/skills/brand-identity/scripts/cut-logo.mjs <print> --box x,y,w,h \
+     --out user/canva-killer/assets/custom/<id>/logo.svg [--mode light|dark] [--preview /tmp/logo.png]
+   ```
+   `--box` comes from `measure-layout.mjs --overlay` (the block bbox) or the grid. The result is a
+   recolorable alpha mask, crisp at the print's size and soft when blown up — tell the user it's
+   a stopgap and ask for the real file again.
+4. **Nothing works**: `"logoText"` (clean uppercase wordmark). Never block the pipeline on a logo.
 
 ### 5. Background pattern
-Pick the closest match from `partials/base.css`'s procedural patterns by looking at the
-reference's background texture: `grid` (default), `dots`, `scanlines`, `mesh`, `hatch`, `noise`,
-`none` (flat). Most brand material is flat — `none` or `grid` at low `patternOpacity` is the safe
-default when unsure; don't force a busy pattern onto a brand whose real material is plain.
+Default is **`none`** (flat) — a pattern is a brand decision, never a platform default. Only set
+`grid`/`dots`/`scanlines`/`mesh`/`hatch`/`noise` when the reference material visibly has that
+texture, and tune `patternOpacity` (0–1) until it reads like the reference, not louder.
 
 ### 6. Write brand.json
 Create/update `user/canva-killer/brands/<id>.json` (see
@@ -116,10 +146,21 @@ Create/update `user/canva-killer/brands/<id>.json` (see
   "logo": "custom/logo",
   "pattern": "none",
   "patternOpacity": 1,
+  "gradient": "linear-gradient(95deg, #35d97b, #3ecfe6)",
   "palette": { "bg": "#...", "surface": "#...", "text": "#...", "muted": "#...", "accent": "#...", "accent2": "#..." },
-  "fonts": { "display": "'...', system-ui, sans-serif", "mono": "'...', ui-monospace, monospace" }
+  "fonts": { "display": "'...', system-ui, sans-serif", "mono": "'...', ui-monospace, monospace", "body": "'...', sans-serif" },
+  "variants": { "light": { "bg": "#...", "surface": "#...", "text": "#...", "muted": "#...", "accent": "#..." } }
 }
 ```
+Everything in this file is reachable from templates: palette keys as `{{bg}}`…`{{accent2}}`;
+fonts as `{{font:<key>}}` (`{{font:body}}`, `{{font:cta}}`… — `{{display}}`/`{{mono}}` also work
+bare; every named family is loaded from Google Fonts automatically, one request per family so a
+family lacking a weight doesn't break the others); any top-level scalar as a token
+(`{{gradient}}`, `{{tagline}}`). Name font roles after their *job* (`cta`, `kicker`, `body`),
+they never clash with content fields because of the `font:` prefix. `gradient` defaults to `accent → accent2` when omitted. `variants` are optional
+palette overrides selectable per render with `data.variant` (`"light"`, `"metallic"`…) — record
+them when the brand material shows a real light/dark or alternate scheme, not as a guess.
+
 `id` becomes the brand's namespace everywhere downstream — it's also the folder name for any
 templates authored exclusively for this brand (`user/canva-killer/templates/<id>/`), so pick it
 once and keep it consistent (don't let a template folder drift to a different spelling than the
@@ -129,11 +170,78 @@ brand's real `id`, e.g. a nickname — that mismatch is what breaks the isolatio
 Don't ship the JSON unchecked:
 1. Render a quick test card with a generic template (`post-square`) and a couple of `data` fields
    using this brand: `node src/render.mjs --brand <id> --template post-square --data <tmp.json>`.
-2. Compare the output PNG side-by-side against the reference image(s): does the palette read as
-   "the same brand" at a glance? Is text legible? Does the accent pop the way it does in the
-   reference?
-3. Adjust `palette`/`pattern` and re-render until it does. This mirrors `layout-recovery`'s QA
-   loop — same discipline, applied to identity instead of layout.
+2. Score it against the reference, don't just eyeball it:
+   ```bash
+   node canva-killer/skills/brand-identity/scripts/compare.mjs <reference.png> <render.png> --out /tmp/cmp.png
+   ```
+   `paletteScore` is the per-role OKLab distance between the reference's and the render's
+   extracted roles (`roleDelta` names the offender); `verdict` lists what is off. Open the `--out`
+   sheet: both images at the same height with their role swatches underneath — the fastest way to
+   see "same brand?" Aim for `paletteScore` ≥ 80; below that, one role is clearly wrong.
+3. Adjust `palette`/`pattern`, re-render, re-compare until the score stops moving and the sheet
+   reads as the same brand. Same discipline as `layout-recovery`'s QA loop, applied to identity.
+
+### 8. The brand's own templates — the onboarding isn't done without them
+A brand JSON alone only feeds the framework's **neutral skeletons** (`post-square`, `story`,
+`blog-cover`, `carrossel-slide`): flat, undecorated layouts that show the palette/fonts/logo and
+nothing else. They are placeholders, not "the brand's look". Finish onboarding by turning the
+reference posts into real layouts:
+1. For each reference post that represents a recurring format (launch, quote, carousel slide,
+   story…), run [`../layout-recovery/SKILL.md`](../layout-recovery/SKILL.md) → one
+   `user/canva-killer/templates/<id>/<format>.html` each. Two or three formats already cover most
+   of a brand's feed.
+2. Give image blocks slot tokens (`{{img:hero}}`) and keep text as `{{tokens}}` so the same
+   template serves every future post.
+3. Once the brand has its own layouts, set `"genericTemplates": false` in the brand JSON so the
+   skeletons stop showing up in `list_templates` and in the studio for that brand.
+4. Render one real post per template, `compare.mjs` against its reference, and only then call the
+   brand onboarded.
+
+_TEMPLATE.json`](../../brands/_TEMPLATE.json) for the shape):
+
+```json
+{
+  "id": "brand-id",
+  "name": "Brand Name",
+  "handle": "@brandhandle",
+  "logoText": "BRAND",
+  "logo": "custom/logo",
+  "pattern": "none",
+  "patternOpacity": 1,
+  "gradient": "linear-gradient(95deg, #35d97b, #3ecfe6)",
+  "palette": { "bg": "#...", "surface": "#...", "text": "#...", "muted": "#...", "accent": "#...", "accent2": "#..." },
+  "fonts": { "display": "'...', system-ui, sans-serif", "mono": "'...', ui-monospace, monospace", "body": "'...', sans-serif" },
+  "variants": { "light": { "bg": "#...", "surface": "#...", "text": "#...", "muted": "#...", "accent": "#..." } }
+}
+```
+Everything in this file is reachable from templates: palette keys as `{{bg}}`…`{{accent2}}`;
+fonts as `{{font:<key>}}` (`{{font:body}}`, `{{font:cta}}`… — `{{display}}`/`{{mono}}` also work
+bare; every named family is loaded from Google Fonts automatically, one request per family so a
+family lacking a weight doesn't break the others); any top-level scalar as a token
+(`{{gradient}}`, `{{tagline}}`). Name font roles after their *job* (`cta`, `kicker`, `body`),
+they never clash with content fields because of the `font:` prefix. `gradient` defaults to `accent → accent2` when omitted. `variants` are optional
+palette overrides selectable per render with `data.variant` (`"light"`, `"metallic"`…) — record
+them when the brand material shows a real light/dark or alternate scheme, not as a guess.
+
+`id` becomes the brand's namespace everywhere downstream — it's also the folder name for any
+templates authored exclusively for this brand (`user/canva-killer/templates/<id>/`), so pick it
+once and keep it consistent (don't let a template folder drift to a different spelling than the
+brand's real `id`, e.g. a nickname — that mismatch is what breaks the isolation between brands).
+
+### 7. Closed-loop visual QA
+Don't ship the JSON unchecked:
+1. Render a quick test card with a generic template (`post-square`) and a couple of `data` fields
+   using this brand: `node src/render.mjs --brand <id> --template post-square --data <tmp.json>`.
+2. Score it against the reference, don't just eyeball it:
+   ```bash
+   node canva-killer/skills/brand-identity/scripts/compare.mjs <reference.png> <render.png> --out /tmp/cmp.png
+   ```
+   `paletteScore` is the per-role OKLab distance between the reference's and the render's
+   extracted roles (`roleDelta` names the offender); `verdict` lists what is off. Open the `--out`
+   sheet: both images at the same height with their role swatches underneath — the fastest way to
+   see "same brand?" Aim for `paletteScore` ≥ 80; below that, one role is clearly wrong.
+3. Adjust `palette`/`pattern`, re-render, re-compare until the score stops moving and the sheet
+   reads as the same brand. Same discipline as `layout-recovery`'s QA loop, applied to identity.
 
 ## See also
 - [`../font-builder/SKILL.md`](../font-builder/SKILL.md) — fonts sub-step (also usable standalone).

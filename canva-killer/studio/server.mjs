@@ -14,8 +14,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  listBrands, listTemplates, getBrand, fillTemplate, render, baseStylesFor, listIcons, resolveIcon,
-  resolveTemplatePath, USER_ROOT, USER_TEMPLATES_DIR, USER_BRANDS_DIR, USER_CUSTOM_ICONS_DIR,
+  listBrands, listTemplates, getBrand, fillTemplate, render, baseStylesFor, listIcons, resolveIcon, fontFacesFor,
+  resolveTemplatePath, USER_ROOT, USER_TEMPLATES_DIR, USER_BRANDS_DIR, USER_CUSTOM_ICONS_DIR, USER_FONTS_DIR, TEMPLATES_DIR,
 } from '../src/render.mjs';
 import { blocksToHtml, htmlToBlocks } from '../src/converter.mjs';
 
@@ -87,10 +87,58 @@ const server = http.createServer(async (req, res) => {
       if (!fs.existsSync(file)) return json(res, { error: 'template not found' }, 404);
       return send(res, 200, fs.readFileSync(file, 'utf8'), 'text/plain; charset=utf-8');
     }
+    // the studio imports the converter (effects, bar CSS) so it never carries a copy
+    if (p === '/converter.mjs') {
+      return send(res, 200, fs.readFileSync(path.join(__dirname, '..', 'src', 'converter.mjs')), 'text/javascript; charset=utf-8');
+    }
+    if (p === '/inspect.mjs' || p === '/brandfonts.mjs') {
+      return send(res, 200, fs.readFileSync(path.join(__dirname, p.slice(1))), 'text/javascript; charset=utf-8');
+    }
+    // INSPECT & ADJUST: writes the <style data-ck-overrides> block into the brand's template.
+    // A framework skeleton is copied into the brand's folder first (the framework files are never
+    // edited; the brand gets its own copy under the same id and the skeleton drops out of its list).
+    if (p === '/api/save-overrides' && req.method === 'POST') {
+      const { brandId, templateId, css } = await readJsonBody(req);
+      const safeBrand = String(brandId || '').replace(/[^\w-]/g, '').slice(0, 60);
+      const safeTpl = String(templateId || '').replace(/[^\w-]/g, '').slice(0, 60);
+      if (!safeBrand || !safeTpl) return json(res, { error: 'invalid brandId/templateId' }, 400);
+      // the CSS lands verbatim inside a <style> that the studio later renders same-origin, so it
+      // must be CSS only: no markup at all, and only `selector{decl;...}` rules
+      const cssText = String(css || '').trim();
+      if (/[<>]/.test(cssText) || !/^(\s*[^{}<>]+\{[^{}<>]*\}\s*)*$/.test(cssText)) {
+        return json(res, { error: 'overrides must be plain CSS rules (selector{...}), no markup' }, 400);
+      }
+      const src = resolveTemplatePath(safeTpl, safeBrand);
+      if (!fs.existsSync(src)) return json(res, { error: 'template not found' }, 404);
+      const dst = path.join(USER_TEMPLATES_DIR, safeBrand, `${safeTpl}.html`);
+      let html = fs.readFileSync(src, 'utf8');
+      const copied = path.resolve(src).startsWith(path.resolve(TEMPLATES_DIR));
+      const block = cssText ? `<style data-ck-overrides>\n${cssText}\n</style>` : '';
+      if (/<style data-ck-overrides>[\s\S]*?<\/style>\n?/.test(html)) html = html.replace(/\n?<style data-ck-overrides>[\s\S]*?<\/style>\n?/, block ? `\n${block}\n` : '\n');
+      else if (block) html = html.replace(/<\/head>/i, `${block}\n</head>`);
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, html);
+      return json(res, { ok: true, file: dst, copiedFromFramework: copied });
+    }
+    // Brand tab font upload -> user/canva-killer/fonts/<brandId>/<file> (becomes @font-face)
+    if (p === '/api/upload-font' && req.method === 'POST') {
+      const { brandId, name, data } = await readJsonBody(req);
+      const safeBrand = String(brandId || '').replace(/[^\w-]/g, '').slice(0, 60);
+      const file = path.basename(String(name || '')).replace(/[^\w. -]/g, '');
+      if (!safeBrand || !/\.(woff2?|ttf|otf)$/i.test(file) || !data) return json(res, { error: 'brandId, a .woff2/.woff/.ttf/.otf name and base64 data are required' }, 400);
+      const dir = path.join(USER_FONTS_DIR, safeBrand);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, file), Buffer.from(String(data), 'base64'));
+      return json(res, { ok: true, file: path.join(dir, file) });
+    }
     if (p === '/api/preview' && req.method === 'POST') {
-      const { brandId, templateId, data } = await readJsonBody(req);
+      const { brandId, templateId, data, brand } = await readJsonBody(req);
       const tpl = fs.readFileSync(resolveTemplatePath(path.basename(templateId), brandId), 'utf8');
-      return send(res, 200, fillTemplate(tpl, getBrand(brandId), data || {}), 'text/html; charset=utf-8');
+      // `brand` (optional) = the in-memory brand being edited in the Brand tab, so the preview
+      // reflects unsaved palette/font changes; identity fields stay pinned to the saved brand.
+      const saved = getBrand(brandId);
+      const effective = brand && typeof brand === 'object' ? { ...saved, ...brand, id: saved.id } : saved;
+      return send(res, 200, fillTemplate(tpl, effective, data || {}), 'text/html; charset=utf-8');
     }
     if (p === '/api/render' && req.method === 'POST') {
       const { brandId, templateId, data } = await readJsonBody(req);
@@ -119,6 +167,9 @@ const server = http.createServer(async (req, res) => {
       const model = htmlToBlocks(fs.readFileSync(file, 'utf8')); // reads the model embedded in the HTML
       if (!model) return json(res, { editable: false }); // code-only template (no model)
       return json(res, { editable: true, ...model });
+    }
+    if (p === '/api/font-faces') { // the brand's own @font-face rules, for the editor canvas
+      return send(res, 200, fontFacesFor(getBrand(url.searchParams.get('brand') || '')), 'text/css; charset=utf-8');
     }
     if (p === '/api/base-css') {
       return send(res, 200, baseStylesFor(url.searchParams.get('brand') || listBrands()[0]), 'text/css; charset=utf-8');
