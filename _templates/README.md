@@ -41,16 +41,27 @@ user**. The flow below is the script the agent follows.
 
 ## Creating a BRAND in canva-killer (palette/fonts/logo for the art)
 
-1. Copy `canva-killer/brands/_TEMPLATE.json` → `user/canva-killer/brands/<id>.json` and fill it
-   in (see `canva-killer/brands/README.md`), or run the `brand-identity` skill against reference
-   images of the brand to fill it in automatically (palette, fonts, logo, pattern). A real brand
-   is user data — it lives in the `user/` overlay.
+1. Run the `brand-identity` skill with the brand's reference prints, **logo file and font
+   files** — it measures the palette (`extract-palette.mjs`), installs logo and fonts, writes
+   `user/canva-killer/brands/<id>.json` and, in its step 8, recovers the brand's recurring post
+   types into real templates. Or copy `canva-killer/brands/_TEMPLATE.json` and fill it by hand.
+   A real brand is user data — it lives in the `user/` overlay:
+   - `user/canva-killer/brands/<id>.json` — palette, fonts (roles → `{{font:<role>}}`),
+     optional `gradient` and `variants` (e.g. `light`, selectable per render with
+     `data.variant`), `pattern` (default `none`).
+   - `user/canva-killer/fonts/<id>/Family-700.woff2` — the brand's own font files → `@font-face`
+     automatically (also uploadable from the studio's Brand tab).
+   - `user/canva-killer/assets/custom/<id>/logo.svg` — logo and marks, `currentColor`-recolorable.
 2. Need a new layout? Templates are **brand-scoped**, same overlay pattern as brands/icons:
    - **Generic** (reusable by any brand): copy `canva-killer/templates/_TEMPLATE.html` →
      `canva-killer/templates/<id>.html` — only for a genuinely brand-agnostic base layout.
    - **Exclusive to one brand** (the common case — most templates are authored to match one
      brand's identity): copy it to `user/canva-killer/templates/<brandId>/<id>.html` instead
-     (keep a `#canvas` at the target size). `<brandId>` MUST match the brand's `id` field
+     (keep a `#canvas` at the target size). Author **one template per post type** the brand
+     actually publishes (its content structure: product, launch, event, hiring…), each with a
+     composition of its own — not one layout under six names. Give per-post images a slot
+     (`{{img:hero}}` ← `data.hero`). The moment a brand owns one template, the framework's
+     neutral skeletons stop appearing in its listing; the brand's look is its templates. `<brandId>` MUST match the brand's `id` field
      exactly — that folder is the isolation boundary: a brand only ever sees generic layouts
      plus its own folder, never another brand's. **Never** drop a brand-specific template flat
      into `user/canva-killer/templates/` (no subfolder) — that's the one mistake that leaks it
@@ -58,6 +69,9 @@ user**. The flow below is the script the agent follows.
 3. Generate art via the CLI (`node src/render.mjs --brand <id> --template <id> --data
    <file.json>`) or via the `render` MCP tool. Rendering resolves brand/template/custom-icon by
    **overlay**: it looks in `user/canva-killer/` first, then falls back to the framework.
+4. Small manual adjustments (move a title, shrink a kicker) belong to the studio's Create/edit
+   tab: open the template, click the element, nudge, **Save adjustments**. They land in a
+   `<style data-ck-overrides>` block inside the template that agents keep and respect.
 
 ---
 

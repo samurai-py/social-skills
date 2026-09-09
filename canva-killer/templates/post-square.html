@@ -3,21 +3,23 @@
 <link href="{{googleFonts}}" rel="stylesheet">
 <style>
   {{baseStyles}}
-  /* Generic layout — showcases the procedural pattern system ({{patternClass}}) as the
-     background, no photo needed. Code-only (not block-editable): see story.html for the
-     bgimage-driven counterpart, blog-cover.html for the icon-forward one. */
+  /* NEUTRAL SKELETON — 1080x1080 feed post. No decoration of its own (no icon, no rule, no
+     pattern): only the brand's palette, fonts and logo speak. Use as a starting point or a
+     placeholder until the brand has layouts of its own (brand-identity step 8); a brand with
+     its own templates can hide the skeletons with "genericTemplates": false. Code-only. */
   #canvas{width:1080px;height:1080px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};padding:80px;display:flex;flex-direction:column;justify-content:space-between;}
   .lockup{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
   .lockup .mark{display:flex;align-items:center;gap:14px;}
   .lockup .mark .ic{width:40px;height:40px;color:{{text}};}
-  .lockup .mark span{font-family:{{mono}};font-size:24px;letter-spacing:1px;color:{{muted}};}
+  .lockup .mark .ic:empty{display:none;}
+  .lockup .mark span{font-family:{{mono}};font-size:22px;letter-spacing:1px;color:{{muted}};}
   .lockup .handle{font-family:{{mono}};font-size:22px;color:{{muted}};}
   .mid{position:relative;z-index:1;}
-  .kicker{display:inline-flex;align-items:center;gap:10px;font-family:{{mono}};font-size:24px;font-weight:600;color:{{accent}};text-transform:uppercase;letter-spacing:4px;padding-bottom:22px;}
-  .kicker::before{content:"";width:34px;height:9px;border-radius:5px;background:{{accent}};}
+  .kicker{font-family:{{mono}};font-size:24px;color:{{accent}};text-transform:uppercase;letter-spacing:3px;padding-bottom:22px;}
+  .kicker:empty{display:none;}
   .title{font-weight:700;font-size:92px;line-height:1.04;letter-spacing:-2px;color:{{text}};max-width:920px;}
   .foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
-  .cta{font-family:{{mono}};font-size:28px;font-weight:600;color:{{accent}};}
+  .cta{font-family:{{mono}};font-size:26px;color:{{accent}};}
 </style></head>
 <body>
   <div id="canvas">
@@ -32,9 +34,6 @@
       <div class="kicker">{{kicker}}</div>
       <div class="title">{{titulo}}</div>
     </div>
-    <div class="foot">
-      <span class="cta">{{cta}}</span>
-      <span class="ic" style="width:44px;height:44px;color:{{accent}}">{{icon:sparkles}}</span>
-    </div>
+    <div class="foot"><span class="cta">{{cta}}</span><span></span></div>
   </div>
 </body></html>

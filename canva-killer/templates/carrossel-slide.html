@@ -3,22 +3,24 @@
 <link href="{{googleFonts}}" rel="stylesheet">
 <style>
   {{baseStyles}}
-  /* Generic layout — showcases carousel auto-numbering ({{slide}}/{{slidetotal}}, filled in
-     automatically by render_carousel) as a counter chip, plus a body-copy slot ({{corpo}}) for
-     the longer text a mid-carousel slide usually carries. Code-only (see post-square.html). */
+  /* NEUTRAL SKELETON — 1080x1350 carousel slide. Plain "{{slide}} / {{slidetotal}}" counter
+     (filled by render_carousel), title + body-copy slot ({{corpo}}). No decoration of its own;
+     see post-square.html for the skeleton rules. Code-only. */
   #canvas{width:1080px;height:1350px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};padding:80px;display:flex;flex-direction:column;justify-content:space-between;}
   .lockup{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
   .lockup .mark{display:flex;align-items:center;gap:14px;}
   .lockup .mark .ic{width:36px;height:36px;color:{{text}};}
+  .lockup .mark .ic:empty{display:none;}
   .lockup .mark span{font-family:{{mono}};font-size:22px;letter-spacing:1px;color:{{muted}};}
-  .counter{font-family:{{mono}};font-size:22px;font-weight:600;color:{{accent}};padding:8px 18px;border:1px solid {{accent}}55;border-radius:100px;}
+  .counter{font-family:{{mono}};font-size:22px;color:{{muted}};}
   .mid{position:relative;z-index:1;}
-  .kicker{display:inline-flex;align-items:center;gap:10px;font-family:{{mono}};font-size:24px;font-weight:600;color:{{accent}};text-transform:uppercase;letter-spacing:4px;padding-bottom:20px;}
-  .kicker::before{content:"";width:32px;height:9px;border-radius:5px;background:{{accent}};}
+  .kicker{font-family:{{mono}};font-size:24px;color:{{accent}};text-transform:uppercase;letter-spacing:3px;padding-bottom:20px;}
+  .kicker:empty{display:none;}
   .title{font-weight:700;font-size:72px;line-height:1.06;letter-spacing:-1.8px;color:{{text}};padding-bottom:28px;}
   .corpo{font-size:34px;line-height:1.5;color:{{text}};max-width:860px;}
+  .corpo:empty{display:none;}
   .foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
-  .cta{font-family:{{mono}};font-size:26px;font-weight:600;color:{{accent}};}
+  .cta{font-family:{{mono}};font-size:26px;color:{{accent}};}
   .handle{font-family:{{mono}};font-size:24px;color:{{muted}};}
 </style></head>
 <body>

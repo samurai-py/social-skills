@@ -12,6 +12,7 @@
     "./seo/ai-shopping",
     "./static-ads",
     "./google-ads/ads-audit",
-    "./google-ads/waste-finder"
+    "./google-ads/waste-finder",
+    "./content-calendar"
   ]
 }

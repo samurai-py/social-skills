@@ -3,6 +3,9 @@
    Filled with the brand's tokens before injecting, so it uses {{bg}}, {{surface}},
    {{accent}}, {{noiseUri}} normally. Lives in a <style>, not an attribute — double quotes are fine. */
 
+/* the brand's own font files (user/canva-killer/fonts/<brandId>/), see render.mjs fontFacesFor() */
+{{fontFaces}}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { background: #000; }
 

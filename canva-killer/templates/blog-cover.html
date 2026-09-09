@@ -3,22 +3,22 @@
 <link href="{{googleFonts}}" rel="stylesheet">
 <style>
   {{baseStyles}}
-  /* Generic layout (OG/link-preview format) — showcases a big icon in its own accent-tinted
-     panel, split from the text column. Reads well even at the small size link previews render
-     at. Code-only (see post-square.html for the note on why). */
+  /* NEUTRAL SKELETON — 1200x630 OG / link preview. Text column + an image slot on the right
+     (data.cover: local path or URL) that falls back to the brand surface when empty. No
+     decoration of its own; see post-square.html for the skeleton rules. Code-only. */
   #canvas{width:1200px;height:630px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};display:flex;}
   .col{flex:1;padding:64px;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:1;}
   .lockup{display:flex;align-items:center;gap:12px;}
   .lockup .ic{width:30px;height:30px;color:{{text}};}
+  .lockup .ic:empty{display:none;}
   .lockup span{font-family:{{mono}};font-size:20px;letter-spacing:1px;color:{{muted}};}
-  .kicker{display:inline-flex;align-items:center;gap:8px;font-family:{{mono}};font-size:20px;font-weight:600;color:{{accent}};text-transform:uppercase;letter-spacing:3px;padding-bottom:14px;}
-  .kicker::before{content:"";width:26px;height:7px;border-radius:4px;background:{{accent}};}
+  .kicker{font-family:{{mono}};font-size:20px;color:{{accent}};text-transform:uppercase;letter-spacing:3px;padding-bottom:14px;}
+  .kicker:empty{display:none;}
   .title{font-weight:700;font-size:52px;line-height:1.08;letter-spacing:-1.2px;color:{{text}};}
   .foot{display:flex;align-items:center;justify-content:space-between;}
-  .cta{font-family:{{mono}};font-size:19px;font-weight:600;color:{{accent}};}
+  .cta{font-family:{{mono}};font-size:19px;color:{{accent}};}
   .handle{font-family:{{mono}};font-size:19px;color:{{muted}};}
-  .panel{width:420px;background:{{accent}}1a;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;}
-  .panel .ic{width:220px;height:220px;color:{{accent}};}
+  .cover{width:420px;position:relative;z-index:1;background-color:{{surface}};background-image:url('{{img:cover}}');background-size:cover;background-position:center;}
 </style></head>
 <body>
   <div id="canvas">
@@ -33,6 +33,6 @@
       </div>
       <div class="foot"><span class="cta">{{cta}}</span><span class="handle">{{handle}}</span></div>
     </div>
-    <div class="panel"><span class="ic">{{icon:sparkles}}</span></div>
+    <div class="cover"></div>
   </div>
 </body></html>

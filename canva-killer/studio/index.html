@@ -332,6 +332,13 @@
             .row2 > * {
                 flex: 1;
             }
+            /* inspect & adjust (code templates) */
+            #inspWrap { position: relative; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+            #inspFrame { border: 0; background: #000; display: block; }
+            #inspBox { position: absolute; display: none; outline: 1.5px dashed var(--accent); outline-offset: 2px; pointer-events: none; z-index: 5; }
+            .fontrow { padding: 8px 0 4px; border-bottom: 1px solid var(--line); }
+            .fsample { font-size: 22px; line-height: 1.2; margin-top: 8px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .fsample .m { font: 11px ui-monospace, monospace; color: var(--muted); }
             /* editor canvas */
             #edcanvas {
                 position: relative;
@@ -589,7 +596,8 @@
                     <button class="act ghost" data-add="rect">+ Panel</button>
                 </div>
                 <p class="hint">
-                    Drag — snaps to the grid (20px). Click to edit.<br />
+                    Block templates: drag — snaps to the grid (20px). Click to edit.
+                    Code templates (written by the agent): click any element in the preview to move it, resize type, swap color tokens, hide it.<br />
                     Keyboard: <b>arrows</b> move (Shift = 1px) · <b>[</b> /
                     <b>]</b> back/front · <b>Del</b> deletes ·
                     <b>Ctrl+D</b> duplicates · <b>Esc</b> deselects.
@@ -599,10 +607,20 @@
                 <div id="canvasWrap">
                     <div id="edcanvas"><div class="bgp"></div></div>
                 </div>
+                <div id="inspWrap" style="display: none">
+                    <iframe id="inspFrame"></iframe>
+                    <div id="inspBox"></div>
+                </div>
             </div>
             <div class="props">
                 <div id="blockProps">
                     <p class="hint">Select or add a block.</p>
+                </div>
+                <div id="inspPanel" style="display: none">
+                    <div id="inspProps"></div>
+                    <button class="act primary" id="inspSave">Save adjustments</button>
+                    <p class="hint">Saved as a <code>&lt;style data-ck-overrides&gt;</code> block inside the template — the agent reads and respects it. A framework skeleton becomes this brand's own copy on first save.</p>
+                    <div class="msg" id="msgI"></div>
                 </div>
                 <hr style="border-color: var(--line); margin: 16px 0" />
                 <label style="margin-top: 0">Template name</label
@@ -641,8 +659,19 @@
             </div>
         </div>
 
-        <script>
+        <script type="module">
+            // Shared with the render path (single source of truth, served by studio/server.mjs):
+            // EFFECTS = CSS filter presets; barCss = accent-bar CSS, here with var(--color) tokens.
+            import { EFFECTS as EFFECT_CSS, barCss as barCssTok, googleFontsUrl } from "/converter.mjs";
+            import { initInspect } from "/inspect.mjs";
+            import { renderFonts } from "/brandfonts.mjs";
             const $ = (s, r = document) => r.querySelector(s);
+            // Attribute/text escaping for values echoed into form markup (content fields legitimately
+            // contain quotes and inline HTML like <span class="hl">).
+            const escA = (s) =>
+                String(s ?? "").replace(/[&<>"']/g, (c) =>
+                    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+                );
             const SYS = new Set([
                 "baseStyles",
                 "patternClass",
@@ -664,13 +693,13 @@
                 "name",
             ]);
             const PATTERNS = [
+                "none",
                 "grid",
                 "dots",
                 "scanlines",
                 "mesh",
                 "hatch",
                 "noise",
-                "none",
             ];
             // same algorithm as render.mjs's NOISE_SVG/NOISE_URI — duplicated here because the editor renders
             // patterns with its own live CSS (var(--surface)/var(--accent)) instead of fetching {{tokens}} HTML.
@@ -789,7 +818,7 @@
                     if (e.target.id === "modal")
                         $("#modal").style.display = "none";
                 };
-                restore();
+                await restore();
                 buildBrandForm();
                 await loadTemplate();
                 setInterval(persist, 60000);
@@ -857,28 +886,24 @@
                 }
                 el.textContent = b.logoText || b.name || b.id;
             }
-            function loadFonts(b) {
-                let href = b.fonts?.googleFonts;
-                if (!href && (b.fonts?.display || b.fonts?.mono)) {
-                    const SYSTEM_FONTS = new Set([
-                        "system-ui", "sans-serif", "serif", "monospace", "ui-monospace",
-                        "cursive", "fantasy", "inherit", "initial", "unset"
-                    ]);
-                    const clean = (f) => {
-                        if (!f) return "";
-                        const m = f.match(/['"]([^'"]+)['"]/);
-                        const name = m ? m[1] : f.split(",")[0].trim();
-                        return SYSTEM_FONTS.has(name.toLowerCase()) ? "" : name;
-                    };
-                    const d = clean(b.fonts.display);
-                    const m = clean(b.fonts.mono);
-                    const fams = [];
-                    if (d) fams.push("family=" + encodeURIComponent(d) + ":wght@400;500;600;700");
-                    if (m) fams.push("family=" + encodeURIComponent(m) + ":wght@400;500;600;700");
-                    if (fams.length) href = "https://fonts.googleapis.com/css2?" + fams.join("&") + "&display=swap";
-                }
-                const o = $("#gf");
-                if (o) o.remove();
+            async function reloadFonts() { await loadFonts(st.brand); return st.localFonts || new Set(); }
+            async function loadFonts(b) {
+                // 1) the brand's own font files (@font-face from the server), 2) Google Fonts for the rest
+                $("#ff")?.remove();
+                $("#gf")?.remove();
+                let local = new Set();
+                try {
+                    const css = await (await fetch("/api/font-faces?brand=" + encodeURIComponent(b.id))).text();
+                    if (css) {
+                        const st = document.createElement("style");
+                        st.id = "ff";
+                        st.textContent = css;
+                        document.head.appendChild(st);
+                        local = new Set([...css.matchAll(/font-family:'([^']+)'/g)].map((m) => m[1].toLowerCase()));
+                    }
+                } catch (e) {}
+                st.localFonts = local;
+                const href = googleFontsUrl(b.fonts || {}, local); // same builder as the render path
                 if (!href) return;
                 const l = document.createElement("link");
                 l.id = "gf";
@@ -950,25 +975,48 @@
                             (m) => m[1],
                         ),
                     ),
-                ].filter((t) => !SYS.has(t));
+                ].filter((t) => !SYS.has(t) && t !== "variant");
+                // {{img:hero}} slots (authored image blocks) -> a path/URL field named `hero`
+                const imgToks = [
+                    ...new Set(
+                        [...st.tplRaw.matchAll(/\{\{img:(\w+)\}\}/g)].map((m) => m[1]),
+                    ),
+                ];
+                const variants = Object.keys(st.brand.variants || {});
                 $("#fields").innerHTML =
                     toks
                         .map((t) => {
-                            const v = st.fields[t] || "";
-                            const big = /titulo|corpo/.test(t);
+                            const v = escA(st.fields[t] || "");
+                            const big = /titulo|corpo|texto|body|desc/.test(t);
                             const inp = big
                                 ? `<textarea data-tok="${t}">${v}</textarea>`
                                 : `<input data-tok="${t}" value="${v}">`;
                             return `<label>${t}</label>${inp}`;
                         })
-                        .join("") || '<p class="hint">No content fields.</p>';
-                document.querySelectorAll("[data-tok]").forEach(
-                    (el) =>
-                        (el.oninput = debounce(() => {
-                            st.fields[el.dataset.tok] = el.value;
-                            previewCompose();
-                        }, 300)),
-                );
+                        .join("") +
+                    imgToks
+                        .map(
+                            (t) =>
+                                `<label>${t} (image: local path or URL)</label><input data-tok="${t}" value="${escA(st.fields[t] || "")}" placeholder="/home/.../photo.jpg">`,
+                        )
+                        .join("") +
+                    (variants.length
+                        ? `<label>variant</label><select data-tok="variant"><option value="">base</option>${variants
+                              .map(
+                                  (v) =>
+                                      `<option value="${v}"${st.fields.variant === v ? " selected" : ""}>${v}</option>`,
+                              )
+                              .join("")}</select>`
+                        : "") ||
+                    '<p class="hint">No content fields.</p>';
+                document.querySelectorAll("[data-tok]").forEach((el) => {
+                    const h = debounce(() => {
+                        st.fields[el.dataset.tok] = el.value;
+                        previewCompose();
+                    }, 300);
+                    el.oninput = h;
+                    el.onchange = h;
+                });
                 previewCompose();
             }
             const composeData = () => {
@@ -980,6 +1028,18 @@
                 const bg = $("#bgimage").value.trim();
                 if (bg) d.bgimage = bg;
                 return d;
+            };
+            const insp = initInspect({
+                $, st,
+                getComposeData: () => composeData(),
+                onStatus: (t) => { const m = $("#msgI"); if (m) m.textContent = t; },
+            });
+            $("#inspSave").onclick = async () => {
+                const r = await insp.save();
+                $("#msgI").textContent = r.ok
+                    ? "Adjustments saved ✓" + (r.copiedFromFramework ? " — skeleton copied into this brand's templates." : "")
+                    : "Error: " + r.error;
+                if (r.ok && r.copiedFromFramework) { st.templates = await (await fetch("/api/templates?brand=" + encodeURIComponent(st.brand.id))).json(); updateTemplatesList(); }
             };
             async function previewCompose() {
                 if (!st.tpl) return; // hasn't loaded a template yet (avoids a POST with a null templateId on boot)
@@ -1050,29 +1110,6 @@
                         : "";
                 el.style.opacity = +$("#aPatternOpacity").value / 100;
             }
-            const EFFECT_CSS = {
-                none: "",
-                grayscale: "grayscale(1)",
-                sepia: "sepia(.7)",
-                invert: "invert(1)",
-                contrast: "contrast(1.4)",
-                "low-contrast": "contrast(.75)",
-                bright: "brightness(1.3)",
-                dark: "brightness(.6)",
-                saturate: "saturate(1.7)",
-                desaturate: "saturate(.35)",
-                blur: "blur(4px)",
-                sharpen: "contrast(1.25) saturate(1.1)",
-                warm: "sepia(.4) saturate(1.3) hue-rotate(-15deg)",
-                cool: "saturate(1.1) hue-rotate(180deg)",
-                duotone:
-                    "grayscale(1) contrast(1.2) sepia(.6) saturate(4) hue-rotate(5deg)",
-                fade: "contrast(.85) brightness(1.1) saturate(.8)",
-                noir: "grayscale(1) contrast(1.5) brightness(.9)",
-                vivid: "saturate(1.9) contrast(1.15)",
-                "hue-shift": "hue-rotate(90deg)",
-                dreamy: "blur(1px) brightness(1.1) saturate(1.3)",
-            };
             const EFFECTS = Object.keys(EFFECT_CSS);
             const DEF = {
                 titulo: {
@@ -1144,26 +1181,14 @@
                 st.blocks.push({
                     id: ++st.uid,
                     type,
-                    x: 100,
-                    y: 100 + st.blocks.length * 40,
+                    x: 100 + (st.blocks.length % 5) * 60,
+                    y: 100 + st.blocks.length * 80,
                     ...d,
                 });
                 select(st.uid);
                 renderBlocks();
             }
-            function barCss(b) {
-                const col = `var(--${b.color})`;
-                const r = b.radius ? `border-radius:${b.radius}px;` : "";
-                if (b.bstyle === "line")
-                    return `width:${b.w}px;height:3px;background:${col};${r}`;
-                if (b.bstyle === "block")
-                    return `width:${b.w}px;height:${b.h}px;background:${col};${r}`;
-                if (b.bstyle === "vertical")
-                    return `width:${b.h}px;height:${b.w}px;background:${col};${r}`;
-                if (b.bstyle === "dots")
-                    return `width:${b.w}px;height:${b.h}px;background-image:radial-gradient(${col} 42%,transparent 44%);background-size:${b.h * 1.6}px ${b.h}px;`;
-                return `width:${b.w}px;height:${b.h}px;background:${col};${r}`; /* underline */
-            }
+            const barCss = (b) => barCssTok(b, `var(--${b.color})`);
             async function renderBlocks() {
                 const c = $("#edcanvas");
                 c.querySelectorAll(".blk").forEach((e) => e.remove());
@@ -1207,12 +1232,12 @@
                         const bg = b.src
                             ? `background-image:url('${b.src}');background-size:${b.fit};background-position:${b.bgpos || "center"};background-repeat:no-repeat`
                             : "background:var(--surface)";
-                        el.innerHTML = `<div style="width:100%;height:100%;border-radius:${b.radius || 0}px;overflow:hidden;filter:${EFFECT_CSS[b.effect] || ""};${bg}">${b.src ? "" : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--mono);font-size:14px">no image</div>'}</div>`;
+                        el.innerHTML = `<div style="width:100%;height:100%;border-radius:${b.radius || 0}px;overflow:hidden;filter:${EFFECT_CSS[b.effect] || ""};${bg}">${b.src ? "" : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--mono);font-size:14px">${b.token ? "{{img:" + escA(b.token) + "}}" : "no image"}</div>`}</div>`;
                     } else if (b.type === "window") {
                         el.style.width = b.w + "px";
                         el.style.height = b.h + "px";
                         const bar = b.bar || 40;
-                        let t = (b.title || "").replace(/[<>&]/g, "");
+                        let t = escA(b.title || "");
                         if (st.brand) {
                             t = t.replace(/\{\{logoText\}\}/g, st.brand.logoText || st.brand.name || st.brand.id)
                                  .replace(/\{\{handle\}\}/g, st.brand.handle || "")
@@ -1341,6 +1366,7 @@
             const showPropsDeb = debounce(showProps, 250);
             document.addEventListener("keydown", (e) => {
                 if (view() !== "author") return;
+                if (insp.key(e)) { e.preventDefault(); return; }
                 if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
                 const b = st.blocks.find((x) => x.id === st.sel);
                 if (!b) return;
@@ -1593,11 +1619,11 @@
                 } else if (b.type === "image") {
                     const px = parseInt(b.bgpos) || 50,
                         py = parseInt((b.bgpos || "").split(" ")[1]) || 50;
-                    h += `<button class="act ghost" id="p_up">Upload image…</button><div class="row2"><div><label>Width</label><input id="p_w" type="number" value="${b.w}"></div><div><label>Height</label><input id="p_h" type="number" value="${b.h}"></div></div><div class="row2"><div><label>Fit</label><select id="p_fit">${fitOpts}</select></div><div><label>Corners</label><input id="p_radius" type="number" value="${b.radius || 0}"></div></div><div class="row2"><div><label>Crop X %</label><input id="p_px" type="number" value="${px}"></div><div><label>Crop Y %</label><input id="p_py" type="number" value="${py}"></div></div><label>Effect</label><select id="p_effect">${effOpts}</select>`;
+                    h += `<button class="act ghost" id="p_up">Upload image…</button><label>Image slot token (agent fills data.&lt;token&gt; per post; empty = fixed image)</label><input id="p_token" value="${escA(b.token || "")}" placeholder="e.g. hero"><div class="row2"><div><label>Width</label><input id="p_w" type="number" value="${b.w}"></div><div><label>Height</label><input id="p_h" type="number" value="${b.h}"></div></div><div class="row2"><div><label>Fit</label><select id="p_fit">${fitOpts}</select></div><div><label>Corners</label><input id="p_radius" type="number" value="${b.radius || 0}"></div></div><div class="row2"><div><label>Crop X %</label><input id="p_px" type="number" value="${px}"></div><div><label>Crop Y %</label><input id="p_py" type="number" value="${py}"></div></div><label>Effect</label><select id="p_effect">${effOpts}</select>`;
                 } else if (b.type === "window") {
-                    h += `<label>Title</label><input id="p_title" value="${(b.title || "").replace(/"/g, "")}"><button class="act ghost" id="p_up" style="margin-top:8px">Upload image…</button><div class="row2"><div><label>Width</label><input id="p_w" type="number" value="${b.w}"></div><div><label>Height</label><input id="p_h" type="number" value="${b.h}"></div></div><div class="row2"><div><label>Bar (height)</label><input id="p_bar" type="number" value="${b.bar || 40}"></div><div><label>Corners</label><input id="p_radius" type="number" value="${b.radius ?? 14}"></div></div><div class="row2"><div><label>Fit</label><select id="p_fit">${fitOpts}</select></div><div><label>Effect</label><select id="p_effect">${effOpts}</select></div></div>`;
+                    h += `<label>Title</label><input id="p_title" value="${escA(b.title || "")}"><button class="act ghost" id="p_up" style="margin-top:8px">Upload image…</button><label>Image slot token (agent fills data.&lt;token&gt; per post; empty = fixed image)</label><input id="p_token" value="${escA(b.token || "")}" placeholder="e.g. hero"><div class="row2"><div><label>Width</label><input id="p_w" type="number" value="${b.w}"></div><div><label>Height</label><input id="p_h" type="number" value="${b.h}"></div></div><div class="row2"><div><label>Bar (height)</label><input id="p_bar" type="number" value="${b.bar || 40}"></div><div><label>Corners</label><input id="p_radius" type="number" value="${b.radius ?? 14}"></div></div><div class="row2"><div><label>Fit</label><select id="p_fit">${fitOpts}</select></div><div><label>Effect</label><select id="p_effect">${effOpts}</select></div></div>`;
                 } else {
-                    h += `<label>Text</label><textarea id="p_text">${b.text}</textarea><label>Token (becomes {{token}})</label><input id="p_token" value="${b.token || ""}"><div class="row2"><div><label>Font</label><select id="p_font"><option value="disp"${b.font === "disp" ? " selected" : ""}>display</option><option value="mono"${b.font === "mono" ? " selected" : ""}>mono</option></select></div><div><label>Size</label><input id="p_size" type="number" value="${b.size}"></div></div><div class="row2"><div><label>Weight</label><select id="p_weight">${[400, 600, 700].map((w) => `<option${b.weight == w ? " selected" : ""}>${w}</option>`).join("")}</select></div><div><label>Color</label><select id="p_color">${colorOpts}</select></div></div>`;
+                    h += `<label>Text</label><textarea id="p_text">${escA(b.text)}</textarea><label>Token (becomes {{token}})</label><input id="p_token" value="${escA(b.token || "")}"><label>Width (0 = auto, no wrapping)</label><input id="p_w" type="number" value="${b.w || 0}"><div class="row2"><div><label>Font</label><select id="p_font"><option value="disp"${b.font === "disp" ? " selected" : ""}>display</option><option value="mono"${b.font === "mono" ? " selected" : ""}>mono</option></select></div><div><label>Size</label><input id="p_size" type="number" value="${b.size}"></div></div><div class="row2"><div><label>Weight</label><select id="p_weight">${[400, 600, 700].map((w) => `<option${b.weight == w ? " selected" : ""}>${w}</option>`).join("")}</select></div><div><label>Color</label><select id="p_color">${colorOpts}</select></div></div>`;
                 }
                 h += `<label>Rotation (°)</label><input id="p_rot" type="number" value="${b.rot || 0}">`;
                 h += `<div class="row2" style="margin-top:8px"><div><label>X</label><input id="p_x" type="number" value="${b.x}"></div><div><label>Y</label><input id="p_y" type="number" value="${b.y}"></div></div>`;
@@ -1647,6 +1673,7 @@
                     b.color = g("p_color").value;
                     b.radius = +g("p_radius").value;
                 } else if (b.type === "image") {
+                    b.token = g("p_token").value.trim().replace(/\W/g, "");
                     b.w = +g("p_w").value;
                     b.h = +g("p_h").value;
                     b.fit = g("p_fit").value;
@@ -1659,6 +1686,7 @@
                         "%";
                 } else if (b.type === "window") {
                     b.title = g("p_title").value;
+                    b.token = g("p_token").value.trim().replace(/\W/g, "");
                     b.w = +g("p_w").value;
                     b.h = +g("p_h").value;
                     b.bar = +g("p_bar").value;
@@ -1668,6 +1696,7 @@
                 } else {
                     b.text = g("p_text").value;
                     b.token = g("p_token").value.trim();
+                    b.w = +g("p_w").value || 0;
                     b.font = g("p_font").value;
                     b.size = +g("p_size").value;
                     b.weight = +g("p_weight").value;
@@ -1679,30 +1708,6 @@
                 renderBlocks();
             }
 
-            function serialize() {
-                const [w, h] = st.dims;
-                const bh = st.blocks
-                    .map((b) => {
-                        const pos = `position:absolute;left:${b.x}px;top:${b.y}px;`;
-                        if (b.type === "bar")
-                            return `    <div style="${pos}${barCss(b).replace(/var\(--(\w+)\)/g, "{{$1}}")}"></div>`;
-                        if (b.type === "icon")
-                            return `    <span class="ic" style="${pos}width:${b.size}px;height:${b.size}px;color:{{${b.color}}}">{{icon:${b.icon}}}</span>`;
-                        if (b.type === "logo")
-                            return `    <span style="${pos}height:${b.size}px;color:{{${b.color}}};display:flex">{{logoSvg}}</span>`;
-                        const content = b.token
-                            ? `{{${b.token}}}`
-                            : esc(b.text);
-                        return `    <div style="${pos}font-family:{{${b.font === "mono" ? "mono" : "display"}}};font-size:${b.size}px;font-weight:${b.weight};color:{{${b.color}}};letter-spacing:${b.ls || 0}px;line-height:1.05;${b.upper ? "text-transform:uppercase;" : ""}">${content}</div>`;
-                    })
-                    .join("\n");
-                return `<!doctype html>\n<html lang="pt-br"><head><meta charset="utf-8"><link href="{{googleFonts}}" rel="stylesheet"><style>\n  {{baseStyles}}\n  #canvas{width:${w}px;height:${h}px;position:relative;isolation:isolate;overflow:hidden;background:{{bg}};color:{{text}};font-family:{{display}};}\n</style></head>\n<body><div id="canvas"><div class="bg-photo" style="{{bgstyle}}"></div><div class="bg-overlay"></div><div class="bg-pattern {{patternClass}}"></div>\n${bh}\n</div></body></html>`;
-            }
-            const esc = (s) =>
-                s.replace(
-                    /[&<>]/g,
-                    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
-                );
             async function saveTemplate() {
                 const name = $("#tplName").value.trim();
                 const m = $("#msgA");
@@ -1751,6 +1756,9 @@
             async function openTemplate() {
                 const id = $("#openTpl").value;
                 if (!id) {
+                    insp.close();
+                    $("#inspPanel").style.display = "none";
+                    $("#blockProps").style.display = "";
                     st.blocks = [];
                     st.sel = null;
                     $("#tplName").value = "";
@@ -1763,12 +1771,18 @@
                         "&brand=" + encodeURIComponent(st.brand.id))
                 ).json();
                 if (!r.editable) {
-                    $("#msgA").textContent =
-                        '"' +
-                        id +
-                        '" was made in code — not visually editable.';
+                    // code template -> inspect & adjust (overrides), not the block editor
+                    await insp.open(id);
+                    $("#inspPanel").style.display = "";
+                    $("#blockProps").style.display = "none";
+                    $("#msgA").textContent = 'Adjusting "' + id + '" (code template).';
+                    rafFit("#inspWrap", st.dims[0], st.dims[1]);
+                    setTimeout(() => insp.fit(), 60);
                     return;
                 }
+                insp.close();
+                $("#inspPanel").style.display = "none";
+                $("#blockProps").style.display = "";
                 st.blocks = r.blocks.map((b) => ({ ...b }));
                 st.uid = Math.max(0, ...st.blocks.map((b) => b.id || 0));
                 st.sel = null;
@@ -1827,9 +1841,8 @@
                 const color = (k) =>
                     `<label>${k}</label><div class="swatch"><input type="color" value="${p[k] || "#000000"}" data-col="${k}"><input value="${p[k] || ""}" data-colt="${k}" style="flex:1"></div>`;
                 box.innerHTML = `<label style="margin-top:0">Palette</label>${["bg", "surface", "text", "muted", "accent", "accent2"].map(color).join("")}
-    <label>Display font</label><input data-font="display" value="${f.display || ""}">
-    <label>Mono font</label><input data-font="mono" value="${f.mono || ""}">
-    <label>Google Fonts URL</label><input data-font="googleFonts" value="${f.googleFonts || ""}">
+    <div id="fontsBox" style="margin-top:14px"></div>
+    <label>Google Fonts URL (optional override)</label><input data-font="googleFonts" value="${escA(f.googleFonts || "")}">
     <label>Logo (paste the SVG) + name</label><textarea id="logoSvgIn" placeholder="<svg ...>…</svg>"></textarea>
     <div class="row2"><input id="logoName" value="logo-${b.id}" placeholder="name"><button class="act ghost" id="upLogo" style="flex:0 0 auto">Upload logo</button></div>
     <button class="act primary" id="saveBrand">Save brand</button><div class="msg" id="msgB"></div>`;
@@ -1860,6 +1873,12 @@
                             brandPreview();
                         }),
                 );
+                renderFonts({
+                    $, brand: b, container: $("#fontsBox"),
+                    localFamilies: st.localFonts || new Set(),
+                    reloadFonts,
+                    onChange: () => { loadFonts(b); applyVars(); brandPreview(); },
+                });
                 $("#upLogo").onclick = async () => {
                     const svg = $("#logoSvgIn").value.trim();
                     if (!svg) {
@@ -1898,7 +1917,8 @@
                 };
                 brandPreview();
             }
-            async function brandPreview() {
+            const brandPreview = debounce(brandPreviewNow, 150);
+            async function brandPreviewNow() {
                 const el = $("#brandPreview");
                 if (!el || view() !== "brand") return;
                 const html = await (
@@ -1907,7 +1927,8 @@
                         headers: { "content-type": "application/json" },
                         body: JSON.stringify({
                             brandId: st.brand.id,
-                            templateId: "post-square",
+                            brand: st.brand, // live edits, not the JSON on disk
+                            templateId: (st.templates && st.templates[0]) || "post-square", // the brand's own layout when it has one
                             data: {
                                 kicker: "BRAND PREVIEW",
                                 titulo: 'Colors & fonts <span class="hl">live</span>',
@@ -1917,12 +1938,17 @@
                         }),
                     })
                 ).text();
-                el.innerHTML = `<iframe id="bframe" sandbox="" style="width:1080px;height:1080px;border:0"></iframe>`;
+                // size the preview to the template's real canvas (a story is not a square)
+                const dm = html.match(/#canvas\{[^}]*?width:\s*(\d+)px;\s*height:\s*(\d+)px/);
+                const [pw, ph] = dm ? [+dm[1], +dm[2]] : [1080, 1080];
+                const k = 420 / pw;
+                el.innerHTML = `<iframe id="bframe" sandbox="" style="width:${pw}px;height:${ph}px;border:0"></iframe>`;
                 const f = $("#bframe");
                 f.srcdoc = html;
                 f.style.transformOrigin = "top left";
-                f.style.transform = "scale(0.388)";
-                el.style.height = "420px";
+                f.style.transform = `scale(${k})`;
+                el.style.height = Math.round(ph * k) + "px";
+                el.style.overflow = "hidden"; // the scaled iframe keeps its full layout box
             }
 
             /* ---- mode + persistence ---- */
@@ -1943,7 +1969,7 @@
                     rafFit("#frameWrap", w, h);
                     previewCompose();
                 } else if (m === "author") {
-                    setupCanvas();
+                    if (insp.active) setTimeout(() => insp.fit(), 30); else setupCanvas();
                 } else {
                     buildBrandForm();
                 }
@@ -1975,16 +2001,20 @@
                         String(d.getMinutes()).padStart(2, "0");
                 } catch (e) {}
             }
-            function restore() {
+            async function restore() {
                 try {
                     const s = JSON.parse(
                         localStorage.getItem("ck-studio") || "{}",
                     );
+                    if (s.fields) st.fields = s.fields;
                     if (s.b && st.brands.find((x) => x.id === s.b)) {
                         $("#brand").value = s.b;
-                        setBrand(s.b);
+                        await setBrand(s.b);
                     }
-                    if (s.fields) st.fields = s.fields;
+                    if (s.tpl && st.templates.includes(s.tpl)) {
+                        $("#tpl").value = s.tpl;
+                        st.tpl = s.tpl;
+                    }
                     if (s.pat) $("#pattern").value = s.pat;
                     if (s.patOp) $("#patternOpacity").value = s.patOp;
                     if (s.bg) $("#bgimage").value = s.bg;
@@ -2003,7 +2033,7 @@
             window.addEventListener("resize", () => {
                 const [w, h] = st.dims;
                 if (view() === "compose") fitScale("#frameWrap", w, h);
-                else if (view() === "author") fitScale("#canvasWrap", w, h);
+                else if (view() === "author") { if (insp.active) insp.fit(); else fitScale("#canvasWrap", w, h); }
             });
             initIdentity();
             boot().finally(() =>

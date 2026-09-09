@@ -11,6 +11,11 @@
       "name": "marketing-tools",
       "source": "./plugins/marketing-tools",
       "description": "Generic, brand-agnostic SEO and Google Ads tools: brand-voice, content-writer, competitor-analysis, gap-zone, rank-tracker, ai-shopping, static-ads, ads-audit, waste-finder."
+    },
+    {
+      "name": "canva-killer",
+      "source": "./canva-killer",
+      "description": "Social art generator: code templates (HTML/CSS/SVG) filled per brand and exported to PNG via the render/render_carousel MCP tools, plus skills for brand identity, fonts, icons and layout recovery."
     }
   ]
 }

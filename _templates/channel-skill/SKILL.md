@@ -34,10 +34,28 @@ Get the **topic** and **goal**. If missing, ask.
 - Format rule 1
 - Format rule 2
 
-### 4. (Optional) Generate the art with canva-killer
-If the channel is visual, write a short **title** and call the `render` MCP tool (`canva-killer`
-server) with `{ brandId, templateId, data: { titulo, kicker, cta, ... } }` — returns the PNG.
-See `canva-killer/README.md`.
+### 4. (Visual channels) Pick the template by POST TYPE, then render
+Keep a table here mapping each post type this channel publishes to the brand's own template in
+`user/canva-killer/templates/<brand-id>/`, with its fields and image slot — the agent picks by
+type, never by guessing a layout. Example row format (fill with the real ones):
+
+| Post type | Template | Fields (`data`) | Image |
+|---|---|---|---|
+| Product explainer | `produto` | `kicker`, `titulo`, `spec1..3`, `cta`, `url` | `media` = product screenshot |
+| Launch / update | `novidade` | `kicker`, `titulo`, `linha1..3`, `cta`, `url` | `media` |
+
+Rules: image fields take a local path or URL (missing image → the slot falls back to `surface`;
+never invent or download copyrighted images — ask for material or deliver the concept as
+`[ART: description / alt]`). `data.variant` switches palette (e.g. `"light"`) when the brand
+declares variants. Text accepts inline HTML (`<span class="hl">word</span>` highlights).
+
+Render with the `render` MCP tool (`canva-killer` server): `{ brandId, templateId, data }` →
+PNG path — or `node canva-killer/src/render.mjs --brand <id> --template <id> --data <json>`.
+**Look at the PNG before writing the caption**: overflowing title, cropped image → fix `data`
+(or the person nudges it in the studio's Create/edit tab) and render again. Carousels:
+`render_carousel` with one `data` per slide. If the brand has no template for a post type yet,
+say so and go through `layout-recovery` / the studio — don't fall back to a generic skeleton
+silently.
 
 ### 5. Show, adjust, and deliver
 Iterate until approved. Save to `tmp/<slug>.txt` (gitignored) and validate length with the

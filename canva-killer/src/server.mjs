@@ -12,7 +12,7 @@ import { render, renderCarousel, listBrands, listTemplates, getBrand } from './r
 // stdout is the MCP protocol channel in stdio mode — logs go to stderr.
 const log = (...a) => process.stderr.write(a.join(' ') + '\n');
 
-const server = new McpServer({ name: 'canva-killer', version: '0.1.0' });
+const server = new McpServer({ name: 'canva-killer', version: '0.2.0' });
 
 server.tool(
   'list_brands',
@@ -43,7 +43,7 @@ server.tool(
   {
     brandId: z.string().describe('brand id (see list_brands)'),
     templateId: z.string().describe('template id (see list_templates); default: post-square').optional(),
-    data: z.record(z.string(), z.string()).describe('post content per field: titulo, kicker, cta, topright, etc. Values are strings (inline HTML allowed).').optional(),
+    data: z.record(z.string(), z.string()).describe('post content per field: titulo, kicker, cta, topright, etc. Values are strings (inline HTML allowed). Reserved keys: bgimage (local path or URL for the full-bleed photo slot), pattern (grid|dots|scanlines|mesh|hatch|noise|none), patternOpacity ("0".."1"), variant (a key of the brand\'s `variants`, e.g. "light"), and one key per {{img:name}} image slot of the template (local path or URL).').optional(),
     out: z.string().describe('absolute output path for the PNG (optional; default: out/<brand>-<template>.png)').optional(),
   },
   async ({ brandId, templateId, data, out }) => {
@@ -62,7 +62,7 @@ server.tool(
   {
     brandId: z.string().describe('brand id (see list_brands)'),
     templateId: z.string().describe('slide template; default: carrossel-slide').optional(),
-    slides: z.array(z.record(z.string(), z.string())).describe('one content object per slide (titulo, kicker, corpo, cta...). slide/slidetotal are filled in automatically if absent.'),
+    slides: z.array(z.record(z.string(), z.string())).describe('one content object per slide (titulo, kicker, corpo, cta...). slide/slidetotal are filled in automatically if absent. Same reserved keys as render.data (bgimage, pattern, variant, image slots).'),
     outDir: z.string().describe('output folder (optional; default: out/)').optional(),
     prefix: z.string().describe('file prefix (optional; default: <brand>-carrossel)').optional(),
   },

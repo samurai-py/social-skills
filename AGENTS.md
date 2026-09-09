@@ -92,6 +92,17 @@ instead of Canva's Enterprise-only autofill. Has a local **Studio** (`npm run st
 > - **font-builder**: [`canva-killer/skills/font-builder/SKILL.md`](canva-killer/skills/font-builder/SKILL.md) — routine for identifying fonts visually via OCR, matching them to Google Fonts, and zero-config setup.
 > - **layout-recovery**: [`canva-killer/skills/layout-recovery/SKILL.md`](canva-killer/skills/layout-recovery/SKILL.md) — steps to reverse-engineer and visually QA a *template* (layout/composition, not brand identity) based on a reference image.
 >
+> Measure, don't guess: `extract-palette.mjs` (palette from N references + contact sheet),
+> `measure-layout.mjs` (margins/blocks/font sizes + gridded overlay) and `compare.mjs`
+> (reference-vs-render score) live under `canva-killer/skills/*/scripts/` — the guide skill lists
+> them. Templates can use `{{gradient}}`, any `fonts.*` key as `{{font:key}}`, per-post image slots
+> (`{{img:hero}}` ← `data.hero`) and brand palette `variants` (`data.variant`).
+>
+> Human + agent share templates. When a person adjusts a code template in the studio, the
+> edits land in a `<style data-ck-overrides>` block inside the template (structural selectors,
+> `{{token}}` colors). Agents must keep that block when editing the file and may edit it too;
+> never inline those values back into the main CSS, or the person loses the handle.
+>
 > Templates are brand-scoped (`user/canva-killer/templates/<brandId>/`) — never author a
 > brand-specific template flat into `user/canva-killer/templates/` without the brand subfolder,
 > or every other brand will see it too.
@@ -129,6 +140,7 @@ user/plugins/<brand>/                    # real brand plugins (voice, channels)
 user/canva-killer/brands/                # real palette/fonts/logo per brand
 user/canva-killer/assets/custom/         # generic authored SVGs/icons, shared by every brand
 user/canva-killer/assets/custom/<brand>/ # SVGs/logo exclusive to one brand
+user/canva-killer/fonts/<brand>/         # the brand's own font files -> @font-face (Family-700.woff2)
 user/canva-killer/templates/<brand>/     # templates exclusive to one brand
 user/canva-killer/out/                   # exported PNGs
 ```
