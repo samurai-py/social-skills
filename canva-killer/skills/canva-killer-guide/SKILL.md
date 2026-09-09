@@ -51,6 +51,8 @@ codebase's skills, as a model for what this looks like:
   (full-bleed photo slot), `pattern`, `patternOpacity`, `variant` (a brand `variants` key, e.g.
   `"light"`), and one key per `{{img:<name>}}` image slot the template declares.
 - `render_carousel(brandId, templateId, slides)` — same, for N slides in one browser session.
+  Each slide may carry its own `template`: slide 1 is the brand's cover for that post type, the
+  rest are pages from its family (`slide-texto`, `slide-lista`, `slide-numero`, …, `slide-cta`).
 
 CLI equivalent for local iteration during development: `node src/render.mjs --brand <id>
 --template <id> --data <file.json> --out <path>`.

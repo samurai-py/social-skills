@@ -262,6 +262,9 @@ export function fillTemplate(html, brand, data = {}) {
   //    slot the agent fills per post, instead of a src frozen at authoring time. Missing data ->
   //    empty url (the slot renders as its fallback surface).
   html = html.replace(/\{\{img:(\w+)\}\}/g, (_, name) => resolveImageUrl(data[name]));
+  //     {{has:hero}} -> "1" when data.hero is set, "" otherwise: lets a template collapse an optional
+  //     slot with CSS (`#canvas[data-media=""] .media{display:none}`) instead of rendering an empty box
+  html = html.replace(/\{\{has:(\w+)\}\}/g, (_, name) => (data[name] != null && String(data[name]).trim() !== '' ? '1' : ''));
   // 2b) fonts by key: {{font:cta}} -> brand.fonts.cta (falls back to display so a template never
   //     ends up with an empty font-family when a brand lacks that role)
   html = html.replace(/\{\{font:(\w+)\}\}/g, (_, k) => fonts[k] || fonts.display || 'system-ui, sans-serif');
@@ -334,7 +337,9 @@ export async function render(opts) {
 
 // Renders an entire carousel in a SINGLE browser session. `slides` is an array of `data`
 // objects (one per slide). Numbers {{slide}}/{{slidetotal}} automatically when the slide doesn't
-// provide them. Returns the PNG paths in order (out/<prefix>-01.png, -02.png, ...).
+// provide them. A slide may name its own layout with `template` (e.g. the brand's cover template
+// on slide 1, then `slide-texto`, `slide-lista`, … from its page family); `templateId` is the
+// default for slides that don't. Returns the PNG paths in order (out/<prefix>-01.png, -02.png, ...).
 export async function renderCarousel({ brandId, templateId = 'carrossel-slide', slides, outDir, prefix }) {
   if (!Array.isArray(slides) || slides.length === 0) {
     throw new Error('renderCarousel: `slides` must be a non-empty array');
@@ -349,8 +354,9 @@ export async function renderCarousel({ brandId, templateId = 'carrossel-slide', 
     for (let i = 0; i < slides.length; i++) {
       const n = String(i + 1).padStart(2, '0');
       // automatic numbering first; whatever the slide brings (including slide/slidetotal) wins.
-      const data = { slide: n, slidetotal: total, ...slides[i] };
-      paths.push(await renderInPage(browser, { brandId, templateId, data, out: path.join(dir, `${pre}-${n}.png`) }));
+      const { template, ...rest } = slides[i];
+      const data = { slide: n, slidetotal: total, ...rest };
+      paths.push(await renderInPage(browser, { brandId, templateId: template || templateId, data, out: path.join(dir, `${pre}-${n}.png`) }));
     }
     return paths;
   } finally {

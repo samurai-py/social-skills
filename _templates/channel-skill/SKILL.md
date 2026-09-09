@@ -52,10 +52,16 @@ declares variants. Text accepts inline HTML (`<span class="hl">word</span>` high
 Render with the `render` MCP tool (`canva-killer` server): `{ brandId, templateId, data }` →
 PNG path — or `node canva-killer/src/render.mjs --brand <id> --template <id> --data <json>`.
 **Look at the PNG before writing the caption**: overflowing title, cropped image → fix `data`
-(or the person nudges it in the studio's Create/edit tab) and render again. Carousels:
-`render_carousel` with one `data` per slide. If the brand has no template for a post type yet,
-say so and go through `layout-recovery` / the studio — don't fall back to a generic skeleton
-silently.
+(or the person nudges it in the studio's Create/edit tab) and render again.
+
+Carousels: slide 1 = the post type's cover template; the rest come from the brand's **page
+family** (`slide-texto`, `slide-lista`, `slide-numero`, `slide-citacao`, `slide-imagem`,
+`slide-passo`, `slide-cta`), each with an optional `media`. Call `render_carousel` with one
+object per slide carrying its own `template` (and `variant` when the brand alternates
+backgrounds); the engine numbers them. Keep a second table here: which covers open a carousel,
+and the page family's fields. If the brand has no template for a post type (or no page family)
+yet, say so and go through `layout-recovery` / the studio — don't fall back to a generic
+skeleton silently.
 
 ### 5. Show, adjust, and deliver
 Iterate until approved. Save to `tmp/<slug>.txt` (gitignored) and validate length with the

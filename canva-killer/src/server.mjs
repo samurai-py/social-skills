@@ -12,7 +12,7 @@ import { render, renderCarousel, listBrands, listTemplates, getBrand } from './r
 // stdout is the MCP protocol channel in stdio mode — logs go to stderr.
 const log = (...a) => process.stderr.write(a.join(' ') + '\n');
 
-const server = new McpServer({ name: 'canva-killer', version: '0.2.0' });
+const server = new McpServer({ name: 'canva-killer', version: '0.2.1' });
 
 server.tool(
   'list_brands',
@@ -58,11 +58,11 @@ server.tool(
 
 server.tool(
   'render_carousel',
-  'Generates an entire carousel (N slides) in a single call, reusing one browser. Numbers {{slide}}/{{slidetotal}} automatically when the slide doesn\'t provide them. Returns the list of PNG paths, in order.',
+  'Generates an entire carousel (N slides) in a single call, reusing one browser. Numbers {{slide}}/{{slidetotal}} automatically when the slide doesn\'t provide them. Each slide may set `template` to pick its own layout (slide 1 = the brand\'s cover template for that post type, then pages from its family such as slide-texto / slide-lista / slide-numero / slide-cta); `templateId` is the fallback. Returns the list of PNG paths, in order.',
   {
     brandId: z.string().describe('brand id (see list_brands)'),
     templateId: z.string().describe('slide template; default: carrossel-slide').optional(),
-    slides: z.array(z.record(z.string(), z.string())).describe('one content object per slide (titulo, kicker, corpo, cta...). slide/slidetotal are filled in automatically if absent. Same reserved keys as render.data (bgimage, pattern, variant, image slots).'),
+    slides: z.array(z.record(z.string(), z.string())).describe('one content object per slide (titulo, kicker, corpo, cta...). slide/slidetotal are filled in automatically if absent. Reserved keys: template (this slide\'s layout id), plus the same as render.data (bgimage, pattern, variant, image slots).'),
     outDir: z.string().describe('output folder (optional; default: out/)').optional(),
     prefix: z.string().describe('file prefix (optional; default: <brand>-carrossel)').optional(),
   },

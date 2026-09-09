@@ -127,6 +127,13 @@ patterns default to `none`; `grid` & co. are opt-in per brand or per render.
 - **Image slots**: a template can declare `background-image:url('{{img:hero}}')`; `data.hero`
   (local path or URL) fills it at render time. Different from `bgimage`, which is the single
   full-bleed photo layer.
+- **Optional slots**: `{{has:hero}}` is `1` when `data.hero` is set and empty otherwise — put it
+  on an attribute (`<div id="canvas" data-hero="{{has:hero}}">`) and collapse the slot with CSS
+  (`#canvas[data-hero=""] .hero{display:none}`) so a post without an image doesn't render a hole.
+- **Carousels = a cover + a page family.** Slide 1 is the brand's cover template for that post
+  type; the following slides come from a small family of page patterns (`slide-texto`,
+  `slide-lista`, `slide-numero`, `slide-citacao`, `slide-imagem`, `slide-passo`, `slide-cta`),
+  each with an optional image. `render_carousel` numbers them and accepts `template` per slide.
 - **`{{gradient}}`**: the brand's `gradient` field, or `linear-gradient(95deg, accent, accent2)`
   when the brand doesn't declare one.
 - **Variants**: a brand may carry `variants: { light: { bg, surface, text, muted, accent } }`.

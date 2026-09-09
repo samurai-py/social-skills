@@ -1,6 +1,6 @@
 {
   "name": "canva-killer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Social art generator from code-based templates (HTML/CSS/SVG), per brand. Drivable by an agent via MCP (render, render_carousel) + skills for brand identity, fonts, icons, and layout recovery.",
   "author": { "name": "mario" },
   "skills": ["./skills/canva-killer-guide", "./skills/brand-identity", "./skills/svg-builder", "./skills/font-builder", "./skills/layout-recovery"]
