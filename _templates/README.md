@@ -61,7 +61,11 @@ user**. The flow below is the script the agent follows.
      actually publishes (its content structure: product, launch, event, hiring…), each with a
      composition of its own — not one layout under six names. Give per-post images a slot
      (`{{img:hero}}` ← `data.hero`). The moment a brand owns one template, the framework's
-     neutral skeletons stop appearing in its listing; the brand's look is its templates. `<brandId>` MUST match the brand's `id` field
+     neutral skeletons stop appearing in its listing; the brand's look is its templates.
+   - **Carousels**: post-type templates are the covers; add a **page family** (`slide-texto`,
+     `slide-lista`, `slide-numero`, `slide-citacao`, `slide-imagem`, `slide-passo`, `slide-cta`)
+     with the `{{slide}} / {{slidetotal}}` counter and an optional `media` slot on every page.
+     `render_carousel` takes `template` per slide. `<brandId>` MUST match the brand's `id` field
      exactly — that folder is the isolation boundary: a brand only ever sees generic layouts
      plus its own folder, never another brand's. **Never** drop a brand-specific template flat
      into `user/canva-killer/templates/` (no subfolder) — that's the one mistake that leaks it

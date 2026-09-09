@@ -1,6 +1,6 @@
 {
   "name": "canva-killer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Social media art generator from code-based templates (HTML/CSS/SVG), filled in per brand. Built to be driven by an AI agent via MCP — the autofill Canva locks behind Enterprise, open and local.",
   "license": "MIT",
   "type": "module",

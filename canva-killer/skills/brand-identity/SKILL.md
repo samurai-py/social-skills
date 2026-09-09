@@ -192,6 +192,14 @@ reference posts into real layouts:
    of a brand's feed.
 2. Give image blocks slot tokens (`{{img:hero}}`) and keep text as `{{tokens}}` so the same
    template serves every future post.
+2b. **If the brand posts carousels**, its post-type templates are the *covers* (slide 1) and it
+   needs a small **page family** for the slides that follow — `slide-texto`, `slide-lista`,
+   `slide-numero`, `slide-citacao`, `slide-imagem`, `slide-passo`, `slide-cta` (name them after
+   what a slide *says*, not after a post type). Each page: same lockup as the covers, a
+   `{{slide}} / {{slidetotal}}` counter, an optional image slot (`{{img:media}}` collapsed via
+   `{{has:media}}`), and a `variant` if the brand alternates backgrounds. Covers that can open a
+   carousel also carry the counter (hidden when the post is single). One family serves every
+   cover; don't author per-cover inner slides.
 3. Once the brand has its own layouts, set `"genericTemplates": false` in the brand JSON so the
    skeletons stop showing up in `list_templates` and in the studio for that brand.
 4. Render one real post per template, `compare.mjs` against its reference, and only then call the

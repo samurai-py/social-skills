@@ -16,7 +16,9 @@
   - Text accepts inline HTML: use <span class="hl">word</span> (base.css helper) to highlight.
   - Icons: {{icon:shield}} (Lucide) or {{icon:custom/name}} (assets/custom). Size the container.
   - Images: full-bleed photo = data.bgimage (local path/URL) on .bg-photo. Per-post image slot =
-    background-image:url('{{img:hero}}') filled by data.hero (any slot name works).
+    background-image:url('{{img:hero}}') filled by data.hero (any slot name works). Make a slot
+    OPTIONAL with {{has:hero}}: <div id="canvas" data-hero="{{has:hero}}"> + CSS
+    #canvas[data-hero=""] .hero{display:none} — the layout collapses when the post has no image.
   - Background pattern: data.pattern (none|grid|dots|scanlines|mesh|hatch|noise); default none.
   - Brand font files in user/canva-killer/fonts/<brandId>/ are injected automatically via {{baseStyles}}.
   - Palette variant: data.variant = a key of the brand's `variants` (e.g. "light").
