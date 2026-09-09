@@ -12,7 +12,7 @@ import { render, renderCarousel, listBrands, listTemplates, getBrand } from './r
 // stdout is the MCP protocol channel in stdio mode — logs go to stderr.
 const log = (...a) => process.stderr.write(a.join(' ') + '\n');
 
-const server = new McpServer({ name: 'canva-killer', version: '0.1.0' });
+const server = new McpServer({ name: 'canva-killer', version: '0.2.0' });
 
 server.tool(
   'list_brands',
